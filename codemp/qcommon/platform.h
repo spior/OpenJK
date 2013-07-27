@@ -1,8 +1,8 @@
 #pragma once
 
 // Simple header file to dispatch to the relevant platform API headers
-#if defined(_WINDOWS)
-#include <windows.h>
+#ifdef _WIN32
+	#include <windows.h>
 #endif
 
 #if defined (__linux__)

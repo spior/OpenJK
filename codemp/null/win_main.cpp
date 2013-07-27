@@ -638,7 +638,7 @@ Used to load a development dll instead of a virtual machine
 =================
 */
 
-void * QDECL Sys_LoadGameDll( const char *name, int (QDECL **entryPoint)(int, ...), int (QDECL *systemcalls)(int, ...) ) {
+void * QDECL Sys_LoadLegacyGameDll( const char *name, intptr_t (QDECL **vmMain)(int, ...), intptr_t (QDECL *systemcalls)(intptr_t, ...) ) {
 	static int	lastWarning = 0;
 	HINSTANCE	libHandle;
 	void	(QDECL *dllEntry)( int (QDECL *syscallptr)(int, ...) );
@@ -649,7 +649,7 @@ void * QDECL Sys_LoadGameDll( const char *name, int (QDECL **entryPoint)(int, ..
 	char	*fn;
 	char	filename[MAX_QPATH];
 
-	Com_sprintf( filename, sizeof( filename ), "%sx86.dll", name );
+	Com_sprintf( filename, sizeof( filename ), "%s"ARCH_STRING DLL_EXT, name );
 
 	if (!Sys_UnpackDLL(filename))
 	{
@@ -683,9 +683,9 @@ void * QDECL Sys_LoadGameDll( const char *name, int (QDECL **entryPoint)(int, ..
 		}
 	}
 
-	dllEntry = ( void (QDECL *)( int (QDECL *)( int, ... ) ) )GetProcAddress( libHandle, "dllEntry" ); 
-	*entryPoint = (int (QDECL *)(int,...))GetProcAddress( libHandle, "vmMain" );
-	if ( !*entryPoint || !dllEntry ) {
+	dllEntry = ( void (QDECL *)( intptr_t (QDECL *)( intptr_t, ... ) ) )GetProcAddress( libHandle, "dllEntry" ); 
+	*vmMain = (intptr_t (QDECL *)(int,...))GetProcAddress( libHandle, "vmMain" );
+	if ( !*vmMain || !dllEntry ) {
 		FreeLibrary( libHandle );
 		return NULL;
 	}
@@ -694,6 +694,54 @@ void * QDECL Sys_LoadGameDll( const char *name, int (QDECL **entryPoint)(int, ..
 	return libHandle;
 }
 
+void *QDECL Sys_LoadGameDll( const char *name, void *(QDECL **moduleAPI)(int, ...) ) {
+	HINSTANCE	libHandle;
+	char	*basepath, *homepath, *cdpath, *gamedir;
+	char	*fn;
+	char	filename[MAX_QPATH];
+
+	Com_sprintf( filename, sizeof( filename ), "%s"ARCH_STRING DLL_EXT, name );
+
+	if (!Sys_UnpackDLL(filename))
+	{
+		return NULL;
+	}
+
+	libHandle = LoadLibrary( filename );
+	if ( !libHandle ) {
+		basepath = Cvar_VariableString( "fs_basepath" );
+		homepath = Cvar_VariableString( "fs_homepath" );
+		cdpath = Cvar_VariableString( "fs_cdpath" );
+		gamedir = Cvar_VariableString( "fs_game" );
+
+		fn = FS_BuildOSPath( basepath, gamedir, filename );
+		libHandle = LoadLibrary( fn );
+
+		if ( !libHandle ) {
+			if( homepath[0] ) {
+				fn = FS_BuildOSPath( homepath, gamedir, filename );
+				libHandle = LoadLibrary( fn );
+			}
+			if ( !libHandle ) {
+				if( cdpath[0] ) {
+					fn = FS_BuildOSPath( cdpath, gamedir, filename );
+					libHandle = LoadLibrary( fn );
+				}
+				if ( !libHandle ) {
+					return NULL;
+				}
+			}
+		}
+	}
+
+	*moduleAPI = (void *(QDECL *)(int,...))GetProcAddress( libHandle, "GetModuleAPI" );
+	if ( !*moduleAPI ) {
+		FreeLibrary( libHandle );
+		return NULL;
+	}
+
+	return libHandle;
+}
 
 /*
 ========================================================================

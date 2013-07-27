@@ -2834,9 +2834,6 @@ void S_Update_(void) {
 	int i,j;
 	int			source;
 	float		pos[3];
-#ifdef _DEBUG
-	char szString[256];
-#endif
 
 	if ( !s_soundStarted || s_soundMuted ) {
 		return;
@@ -3123,9 +3120,6 @@ void UpdateSingleShotSounds()
 	ALint state;
 	ALint processed;
 	channel_t *ch;
-#ifdef _DEBUG
-	char szString[256];
-#endif
 
 	// Firstly, check if any single-shot sounds have completed, or if they need more data (for streaming Sources),
 	// and/or if any of the currently playing (non-Ambient) looping sounds need to be stopped
@@ -3630,9 +3624,6 @@ void S_SetLipSyncs()
 	unsigned int samples;
 	int currentTime, timePlayed;
 	channel_t *ch;
-#ifdef _DEBUG
-	char szString[256];
-#endif
 
 #ifdef _WIN32
 	currentTime = timeGetTime();
@@ -4546,7 +4537,7 @@ void S_RestartMusic( void )
 // to be honest, although the code still plays WAVs some of the file-check logic only works for MP3s, so if you ever want
 //	to use WAV music you'll have to do some tweaking below (but I've got other things to do so it'll have to wait - Ste)
 //
-void S_StartBackgroundTrack( const char *intro, const char *loop, int bCalledByCGameStart )
+void S_StartBackgroundTrack( const char *intro, const char *loop, qboolean bCalledByCGameStart )
 {
 	bMusic_IsDynamic = qfalse;
 
