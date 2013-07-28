@@ -21,6 +21,7 @@ This file is part of Jedi Academy.
 #define __QCOMMON_H__
 
 #include "stringed_ingame.h"
+#include "../qcommon/q_shared.h"
 #include "../../codeJK2/qcommon/strippublic.h"
 #include "../qcommon/cm_public.h"
 
@@ -97,7 +98,7 @@ void MSG_ReadDeltaPlayerstate( msg_t *msg, struct playerState_s *from, struct pl
 
 //============================================================================
 
-#ifdef _M_IX86
+#ifdef id386
 //
 // optimised stuff for Intel, since most of our data is in that format anyway...
 //
@@ -130,11 +131,9 @@ NET
 ==============================================================
 */
 
-#ifdef _XBOX
-#define PACKET_BACKUP	2
-#else
+
 #define	PACKET_BACKUP	16	// number of old messages that must be kept on client and
-#endif						// server for delta comrpession and ping estimation
+													// server for delta comrpession and ping estimation
 #define	PACKET_MASK		(PACKET_BACKUP-1)
 
 #define	MAX_PACKET_USERCMDS		32		// max number of usercmd_t in a packet
@@ -245,6 +244,15 @@ enum clc_ops_e {
 	clc_clientCommand		// [string] message
 };
 
+
+#define	VMA(x) ((void*)args[x])
+inline float _vmf(intptr_t x)
+{
+	floatint_t fi;
+	fi.i = (int) x;
+	return fi.f;
+}
+#define	VMF(x)	_vmf(args[x])
 
 /*
 ==============================================================
@@ -372,7 +380,7 @@ float	Cvar_VariableValue( const char *var_name );
 int		Cvar_VariableIntegerValue( const char *var_name );
 // returns 0 if not defined or non numeric
 
-char	*Cvar_VariableString( const char *var_name );
+const char	*Cvar_VariableString( const char *var_name );
 void	Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
 // returns an empty string if not defined
 
@@ -381,6 +389,7 @@ char 	*Cvar_CompleteVariable( const char *partial );
 // returns NULL if nothing fits
 
 void 	Cvar_Reset( const char *var_name );
+void 	Cvar_ForceReset( const char *var_name );
 
 void	Cvar_SetCheatState( void );
 // reset all testing vars to a safe value
@@ -493,6 +502,7 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode );
 int		FS_Seek( fileHandle_t f, long offset, int origin );
 // seek on a file (doesn't work for zip files!!!!!!!!)
 
+qboolean FS_FilenameCompare( const char *s1, const char *s2 );
 
 // These 2 are generally only used by the save games, filenames are local (eg "saves/blah.sav")
 //
@@ -517,12 +527,12 @@ void		Com_BeginRedirect (char *buffer, int buffersize, void (*flush)(char *));
 void		Com_EndRedirect( void );
 void 		QDECL Com_Printf( const char *fmt, ... );
 void 		QDECL Com_DPrintf( const char *fmt, ... );
-void 		QDECL Com_Error( int code, const char *fmt, ... );
+void 		QDECL Com_Error( int code, const char *fmt, ... ) __attribute__((noreturn));
 void 		Com_Quit_f( void );
 int			Com_EventLoop( void );
 int			Com_Milliseconds( void );	// will be journaled properly
 unsigned	Com_BlockChecksum( const void *buffer, int length );
-int			Com_Filter(char *filter, char *name, int casesensitive);
+int			Com_Filter(const char *filter, const char *name, int casesensitive);
 qboolean	Com_SafeMode( void );
 
 void		Com_StartupVariable( const char *match );
@@ -538,6 +548,7 @@ extern	cvar_t	*com_sv_running;
 extern	cvar_t	*com_cl_running;
 extern	cvar_t	*com_viewlog;			// 0 = hidden, 1 = visible, 2 = minimized
 extern	cvar_t	*com_version;
+extern	cvar_t	*com_homepath;
 
 #ifndef __NO_JK2
 extern	cvar_t	*com_jk2;
@@ -561,10 +572,8 @@ extern	int		com_frameMsec;
 
 extern	qboolean	com_errorEntered;
 
-#ifndef _XBOX
 extern	fileHandle_t	com_journalFile;
 extern	fileHandle_t	com_journalDataFile;
-#endif
 
 /*
 
@@ -590,7 +599,7 @@ void  Z_TagFree	( memtag_t eTag );
 int   Z_Free	( void *ptr );	//returns bytes freed
 int	  Z_Size	( void *pvAddress);
 void  Z_MorphMallocTag( void *pvAddress, memtag_t eDesiredTag );
-qboolean Z_IsFromZone(void *pvAddress, memtag_t eTag);	//returns size if true
+qboolean Z_IsFromZone(const void *pvAddress, memtag_t eTag);	//returns size if true
 
 #ifdef DEBUG_ZONE_ALLOCS
 
@@ -700,7 +709,7 @@ void SCR_DebugGraph (float value, int color);	// FIXME: move logging to common?
 // server interface
 //
 void SV_Init( void );
-void SV_Shutdown( char *finalmsg );
+void SV_Shutdown( const char *finalmsg, qboolean delayFreeGame = qfalse );
 void SV_Frame( int msec,float fractionMsec);
 void SV_PacketEvent( netadr_t from, msg_t *msg );
 qboolean SV_GameCommand( void );
@@ -752,17 +761,24 @@ sysEvent_t	Sys_GetEvent( void );
 
 void	Sys_Init (void);
 
+#ifdef _WIN32
+	#include <Windows.h>
+	#define Sys_LoadLibrary(f) (void*)LoadLibrary(f)
+	#define Sys_UnloadLibrary(h) FreeLibrary((HMODULE)h)
+	#define Sys_LoadFunction(h,fn) (void*)GetProcAddress((HMODULE)h,fn)
+	#define Sys_LibraryError() "unknown"
+#endif // linux and mac use SDL in SDL_loadlibrary.h
+
+void	* QDECL Sys_LoadDll(const char *name, qboolean useSystemLib);
+void	Sys_UnloadDll( void *dllHandle );
+
 char	*Sys_GetCurrentUser( void );
 
-void	QDECL Sys_Error( const char *error, ...);
+void	QDECL Sys_Error( const char *error, ...) __attribute__((noreturn));
 void	Sys_Quit (void);
 char	*Sys_GetClipboardData( void );	// note that this isn't journaled...
 
 void	Sys_Print( const char *msg );
-#ifdef _XBOX
-void	Sys_Log( const char *file, const char *msg );
-void	Sys_Log( const char *file, const void *buffer, int size, bool flush );
-#endif
 
 // Sys_Milliseconds should only be used for profiling purposes,
 // any game related timing information should come from event timestamps
@@ -783,13 +799,20 @@ void	Sys_StreamSeek( fileHandle_t f, int offset, int origin );
 void	Sys_ShowConsole( int level, qboolean quitOnClose );
 void	Sys_SetErrorText( const char *text );
 
-qboolean	Sys_CheckCD( void );
-
 void	Sys_Mkdir( const char *path );
 char	*Sys_Cwd( void );
 char	*Sys_DefaultCDPath(void);
+void	Sys_SetDefaultInstallPath(const char *path);
+char	*Sys_DefaultInstallPath(void);
 char	*Sys_DefaultBasePath(void);
+
+#ifdef MACOS_X
+char    *Sys_DefaultAppPath(void);
+#endif
+
 char	*Sys_DefaultHomePath(void);
+const char *Sys_Dirname( char *path );
+const char *Sys_Basename( char *path );
 
 char **Sys_ListFiles( const char *directory, const char *extension, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **filelist );
@@ -798,8 +821,8 @@ void	Sys_BeginProfiling( void );
 void	Sys_EndProfiling( void );
 
 qboolean Sys_LowPhysicalMemory();
-qboolean Sys_FileOutOfDate( LPCSTR psFinalFileName /* dest */, LPCSTR psDataFileName /* src */ );
-qboolean Sys_CopyFile(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, qboolean bOverwrite);
+qboolean Sys_FileOutOfDate( const char *psFinalFileName /* dest */, const char *psDataFileName /* src */ );
+qboolean Sys_CopyFile(const char *lpExistingFileName, const char *lpNewFileName, qboolean bOverwrite);
 
 
 byte*	SCR_GetScreenshot(qboolean *qValid);
@@ -811,41 +834,5 @@ inline int Round(float value)
 {
 	return((int)floorf(value + 0.5f));
 }
-
-
-#ifdef _XBOX
-//////////////////////////////
-//
-// Map Lump Loader
-//
-struct Lump
-{
-	void* data;
-	int len;
-	
-	Lump() : data(NULL), len(0) {}
-	~Lump() { clear(); }
-
-	void load(const char* map, const char* lump)
-	{
-		clear();
-
-		char path[MAX_QPATH];
-		Com_sprintf(path, MAX_QPATH, "%s/%s.mle", map, lump);
-
-		len = FS_ReadFile(path, &data);
-		if (len < 0) len = 0;
-	}
-
-	void clear(void)
-	{
-		if (data)
-		{
-			FS_FreeFile(data);
-			data = NULL;
-		}
-	}
-};
-#endif _XBOX
 
 #endif //__QCOMMON_H__

@@ -464,6 +464,8 @@ typedef struct {
 	char		saber2[MAX_QPATH];
 
 	int			vote, teamvote; // 0 = none, 1 = yes, 2 = no
+
+	char		guid[33];
 } clientPersistant_t;
 
 typedef struct renderInfo_s
@@ -1288,7 +1290,7 @@ qboolean CheckGauntletAttack( gentity_t *ent );
 //
 // g_client.c
 //
-team_t TeamCount( int ignoreClientNum, int team );
+int TeamCount( int ignoreClientNum, team_t team );
 int TeamLeader( int team );
 team_t PickTeam( int ignoreClientNum );
 void SetClientViewAngle( gentity_t *ent, vec3_t angle );
@@ -1519,7 +1521,7 @@ int BotAIStartFrame( int time );
 extern	level_locals_t	level;
 extern	gentity_t		g_entities[MAX_GENTITIES];
 
-#define	FOFS(x) ((size_t)&(((gentity_t *)0)->x))
+#define	FOFS(x) offsetof(gentity_t, x)
 
 #ifndef OJK_NEW_VM_API
 

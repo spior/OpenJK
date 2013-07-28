@@ -4,7 +4,7 @@
 //
 
 #include "qcommon/q_shared.h"
-#include "renderer/tr_types.h"
+#include "rd-common/tr_types.h"
 #include "ui_public.h"
 #include "keycodes.h"
 #include "game/bg_public.h"
@@ -592,7 +592,7 @@ typedef struct {
 #define MAX_PLAYERMODELS 512
 
 //JAC: Added
-#define DEMO_DIRECTORY "demos/"
+#define DEMO_DIRECTORY "demos"
 #define DEMO_EXTENSION "dm_"
 #define MAX_DEMOLIST (MAX_DEMOS * MAX_QPATH)
 
@@ -836,7 +836,7 @@ typedef struct {
 	int					playerSpeciesIndex;
 
 	short		movesTitleIndex;
-	char		*movesBaseAnim;
+	const char	*movesBaseAnim;
 	int			moveAnimTime;
 
 	int			languageCount;

@@ -6,8 +6,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <libgen.h>
 
-#include "../game/q_shared.h"
+#include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "sys_local.h"
 
@@ -119,10 +120,10 @@ qboolean Sys_LowPhysicalMemory( void )
 
 void Conbuf_AppendText( const char *pMsg )
 {
-	char		msg[4096];
-	strcpy(msg, pMsg);
-	printf(Q_CleanStr(msg));
-	printf("\n");
+	char msg[4096] = {0};
+	Q_strncpyz(msg, pMsg, sizeof(msg));
+	Q_StripColor(msg);
+	printf("%s", msg);
 }
 
 void Sys_Print( const char *msg ) {
@@ -136,6 +137,27 @@ void Sys_Print( const char *msg ) {
 	}
 	Conbuf_AppendText( msg );
 }
+
+/*
+ ==================
+ Sys_Basename
+ ==================
+ */
+const char *Sys_Basename( char *path )
+{
+	return basename( path );
+}
+
+/*
+ ==================
+ Sys_Dirname
+ ==================
+ */
+const char *Sys_Dirname( char *path )
+{
+	return dirname( path );
+}
+
 
 /*
 ========================================================================
@@ -156,7 +178,6 @@ sysEvent_t Sys_GetEvent( void ) {
 	sysEvent_t	ev;
 	char		*s;
 	msg_t		netmsg;
-	netadr_t	adr;
 
 	// return if we have data
 	if ( eventHead > eventTail ) {
@@ -221,8 +242,6 @@ char **Sys_ListFiles( const char *directory, const char *extension, int *numfile
 	int			i;
 	struct stat st;
 
-	int			extLen;
-
 	if ( !extension)
 		extension = "";
 
@@ -230,8 +249,6 @@ char **Sys_ListFiles( const char *directory, const char *extension, int *numfile
 		extension = "";
 		dironly = qtrue;
 	}
-
-	extLen = strlen( extension );
 
 	// search
 	nfiles = 0;
@@ -346,7 +363,7 @@ Sys_Mkdir
 */
 /*qboolean*/void Sys_Mkdir( const char *path )
 {
-	int result = mkdir( path, 0750 );
+	/*int result = */mkdir( path, 0750 );
 
 /*	if( result != 0 )
 		return (qboolean)(errno == EEXIST);

@@ -1,6 +1,3 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 // tr_shade.c
 
 #include "tr_local.h"
@@ -88,7 +85,7 @@ static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void 
 			{
 				element( indexes[i+2] );
 				c_vertexes++;
-				assert( indexes[i+2] < tess.numVertexes );
+				assert( (int)indexes[i+2] < tess.numVertexes );
 				even = qtrue;
 			}
 			// otherwise we're done with this strip so finish it and start
@@ -240,7 +237,7 @@ void R_BindAnimatedImage( textureBundle_t *bundle ) {
 	{
 		// it is necessary to do this messy calc to make sure animations line up
 		// exactly with waveforms of the same frequency
-		index = myftol( tess.shaderTime * bundle->imageAnimationSpeed * FUNCTABLE_SIZE );
+		index = Q_ftol( tess.shaderTime * bundle->imageAnimationSpeed * FUNCTABLE_SIZE );
 		index >>= FUNCTABLE_SIZE2;
 
 		if ( index < 0 ) {
@@ -273,6 +270,10 @@ Draws triangle outlines for debugging
 ================
 */
 static void DrawTris (shaderCommands_t *input) {
+    if (input->numVertexes <= 0) {
+        return;
+    }
+
 	GL_Bind( tr.whiteImage );
 	qglColor3f (1,1,1);
 
@@ -669,9 +670,9 @@ static void ProjectDlightTexture2( void ) {
 			oldTexCoordsArray[numIndexes+2][0]=tess.texCoords[c][0][0];
 			oldTexCoordsArray[numIndexes+2][1]=tess.texCoords[c][0][1];
 
-			colorTemp[0] = myftol(floatColor[0] * modulate);
-			colorTemp[1] = myftol(floatColor[1] * modulate);
-			colorTemp[2] = myftol(floatColor[2] * modulate);
+			colorTemp[0] = Q_ftol(floatColor[0] * modulate);
+			colorTemp[1] = Q_ftol(floatColor[1] * modulate);
+			colorTemp[2] = Q_ftol(floatColor[2] * modulate);
 			colorTemp[3] = 255;
 			colorArray[numIndexes]=*(unsigned int *)colorTemp;
 			colorArray[numIndexes+1]=*(unsigned int *)colorTemp;
@@ -1017,9 +1018,9 @@ static void ProjectDlightTexture( void ) {
 			}
 			clipBits[i] = clip;
 
-			colors[0] = myftol(floatColor[0] * modulate);
-			colors[1] = myftol(floatColor[1] * modulate);
-			colors[2] = myftol(floatColor[2] * modulate);
+			colors[0] = Q_ftol(floatColor[0] * modulate);
+			colors[1] = Q_ftol(floatColor[1] * modulate);
+			colors[2] = Q_ftol(floatColor[2] * modulate);
 			colors[3] = 255;
 		}
 
@@ -1235,7 +1236,7 @@ static void ComputeColors( shaderStage_t *pStage, int forceRGBGen )
 				dot = 0.0f;
 			}
 
-			color[0] = color[1] = color[2] = color[3] = myftol( backEnd.currentEntity->e.shaderRGBA[0] * (1-dot) );
+			color[0] = color[1] = color[2] = color[3] = Q_ftol( backEnd.currentEntity->e.shaderRGBA[0] * (1-dot) );
 		}
 
 		killGen = qtrue;
@@ -1436,6 +1437,8 @@ static void ComputeColors( shaderStage_t *pStage, int forceRGBGen )
 				colors[i][3] = tess.vertexAlphas[i][pStage->index]; //rwwRMG - added support
 			}
 		}
+		break;
+	default:
 		break;
 	}
 avoidGen:
@@ -1680,7 +1683,6 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 
 		if ( !pStage->active )
 		{
-			assert(pStage->active);//wtf?
 			break;
 		}
 

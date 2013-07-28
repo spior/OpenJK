@@ -21,7 +21,7 @@ This file is part of Jedi Academy.
 #ifndef __CLIENT_H__
 #define __CLIENT_H__
 
-#include "../game/q_shared.h"
+#include "../qcommon/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "../renderer/tr_public.h"
 #include "keys.h"
@@ -182,15 +182,9 @@ typedef enum {
 	EXIT_LAUNCH			// quit all the way out of the game on disconnect
 } exitTo_t;
 
-#ifdef _XBOX
-#define	MAX_LOCAL_SERVERS	1
-#define	MAX_GLOBAL_SERVERS	1
-#define MAX_PINGREQUESTS	1
-#else
 #define	MAX_LOCAL_SERVERS	16
 #define	MAX_GLOBAL_SERVERS	256
 #define MAX_PINGREQUESTS	16
-#endif
 
 typedef struct {
 	netadr_t	adr;
@@ -237,10 +231,6 @@ typedef struct {
 	qhandle_t	charSetShader;
 	qhandle_t	whiteShader;
 	qhandle_t	consoleShader;
-
-#ifdef _XBOX
-	short		mainGamepad;
-#endif
 } clientStatic_t;
 
 #define	CON_TEXTSIZE	0x30000 //was 32768
@@ -301,7 +291,7 @@ extern	cvar_t	*cl_freelook;
 extern	cvar_t	*cl_mouseAccel;
 extern	cvar_t	*cl_showMouseRate;
 
-extern	cvar_t	*cl_ingameVideo;
+extern	cvar_t	*cl_inGameVideo;
 extern  cvar_t  *cl_VideoQuality;
 extern	cvar_t	*cl_VidFadeUp;
 extern	cvar_t	*cl_VidFadeDown;
@@ -316,7 +306,9 @@ extern	cvar_t	*cl_activeAction;
 
 extern	cvar_t	*cl_thumbStickMode;
 
+#ifndef _WIN32
 extern	cvar_t	*cl_consoleKeys;
+#endif
 
 //=================================================
 
@@ -416,17 +408,11 @@ void	SCR_FillRect( float x, float y, float width, float height,
 void	SCR_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
 void	SCR_DrawNamedPic( float x, float y, float width, float height, const char *picname );
 
-void	SCR_DrawBigString( int x, int y, const char *s, float alpha );			// draws a string with embedded color control characters with fade
-void	SCR_DrawBigStringColor( int x, int y, const char *s, vec4_t color );	// ignores embedded color control characters
-void	SCR_DrawSmallString( int x, int y, const char *s, float alpha );			// draws a string with embedded color control characters with fade
-void	SCR_DrawSmallStringColor( int x, int y, const char *s, vec4_t color );	// ignores embedded color control characters
+void	SCR_DrawBigString( int x, int y, const char *s, float alpha, qboolean noColorEscape );			// draws a string with embedded color control characters with fade
+void	SCR_DrawBigStringColor( int x, int y, const char *s, vec4_t color, qboolean noColorEscape );	// ignores embedded color control characters
+void	SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, qboolean forceColor, qboolean noColorEscape );
 void	SCR_DrawBigChar( int x, int y, int ch );
 void	SCR_DrawSmallChar( int x, int y, int ch );
-
-#ifdef _XBOX
-void	SCR_PrecacheScreenshot();
-#endif
-
 
 //
 // cl_cin.c
@@ -448,12 +434,6 @@ void CIN_SetExtents (int handle, int x, int y, int w, int h);
 void CIN_SetLooping (int handle, qboolean loop);
 void CIN_UploadCinematic(int handle);
 void CIN_CloseAllVideos(void);
-
-#ifdef _XBOX
-void CIN_Init(void);
-bool CIN_PlayAllFrames( const char *arg, int x, int y, int w, int h, int systemBits, bool keyBreakAllowed );
-#endif
-
 
 //
 // cl_cgame.c

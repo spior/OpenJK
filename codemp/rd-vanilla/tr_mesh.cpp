@@ -1,6 +1,3 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 // tr_mesh.c: triangle model functions
 
 #include "tr_local.h"
@@ -209,7 +206,7 @@ int R_ComputeLOD( trRefEntity_t *ent ) {
 		}
 
 		flod *= tr.currentModel->numLods;
-		lod = myftol( flod );
+		lod = Q_ftol( flod );
 
 		if ( lod < 0 )
 		{

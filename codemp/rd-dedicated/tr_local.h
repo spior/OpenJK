@@ -1,26 +1,13 @@
 #pragma once
 
-typedef const char * LPCSTR;
-typedef unsigned short USHORT;
 typedef unsigned int GLuint;
 
 #include "qcommon/qfiles.h"
-#include "renderer/tr_public.h"
+#include "rd-common/tr_public.h"
 #include "ghoul2/ghoul2_shared.h" //rwwRMG - added
 
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
 typedef unsigned int glIndex_t;
-
-#ifndef _WIN32
-#include "qcommon/platform.h"
-#endif
-
-// fast float to int conversion
-#if id386 && !( (defined __linux__ || defined __FreeBSD__ || defined MACOS_X) && (defined __i386__ ) ) // rb010123
-inline long myftol( float f );
-#else
-#define	myftol(x) ((int)(x))
-#endif
 
 //for 3d textures -rww
 #define GL_TEXTURE_3D                     0x806F
@@ -101,7 +88,7 @@ typedef struct {
 
 typedef struct image_s {
 	char		imgName[MAX_QPATH];		// game path, including extension
-	USHORT		width, height;	// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
+	word		width, height;	// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
 	GLuint		texnum;					// gl texture binding
 
 	int			frameUsed;			// for texture usage in frame statistics
@@ -1644,7 +1631,9 @@ void R_AddAnimSurfaces( trRefEntity_t *ent );
 /*
 Ghoul2 Insert Start
 */
+#ifdef _MSC_VER
 #pragma warning (disable: 4512)	//default assignment operator could not be gened
+#endif
 class CRenderableSurface
 {
 public:
@@ -1890,10 +1879,7 @@ void RE_RotatePic2 ( float x, float y, float w, float h,
 					  float s1, float t1, float s2, float t2,float a, qhandle_t hShader );
 void RE_BeginFrame( stereoFrame_t stereoFrame );
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec );
-void RE_SaveJPG(char * filename, int quality, int image_width, int image_height, byte *image_buffer, int padding);
-size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality, int image_width, int image_height, byte *image_buffer, int padding);
 void RE_TakeVideoFrame( int width, int height, byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
-int RE_SavePNG( char *filename, byte *buf, size_t width, size_t height, int byteDepth );
 
 /*
 Ghoul2 Insert Start

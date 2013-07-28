@@ -18,19 +18,14 @@ This file is part of Jedi Academy.
 
 // common.c -- misc functions used in client and server
 
-#include "../game/q_shared.h"
+#include "q_shared.h"
 #include "qcommon.h"
-#include "../qcommon/sstring.h"	// to get Gil's string class, because MS's doesn't compile properly in here
+#include "sstring.h"	// to get Gil's string class, because MS's doesn't compile properly in here
 #include "stv_version.h"
 
-#ifdef _XBOX
-#include "../win32/win_file.h"
-#include "../ui/ui_splash.h"
-#endif
-
-#ifndef FINAL_BUILD
-#include "platform.h"
-#endif
+// Because renderer.
+#include "../renderer/tr_public.h"
+extern refexport_t re;
 
 #define	MAXPRINTMSG	4096
 
@@ -39,13 +34,11 @@ This file is part of Jedi Academy.
 int		com_argc;
 char	*com_argv[MAX_NUM_ARGVS+1];
 
-#ifndef _XBOX
 static fileHandle_t	logfile;
 static fileHandle_t	speedslog;
 static fileHandle_t	camerafile;
 fileHandle_t	com_journalFile;
 fileHandle_t	com_journalDataFile;		// config files are written here
-#endif
 
 cvar_t	*com_viewlog;
 cvar_t	*com_speeds;
@@ -60,10 +53,12 @@ cvar_t	*com_showtrace;
 cvar_t	*com_terrainPhysics;
 cvar_t	*com_version;
 cvar_t	*com_buildScript;	// for automated data building scripts
+cvar_t	*com_bootlogo;
 cvar_t	*cl_paused;
 cvar_t	*sv_paused;
 cvar_t	*com_skippingcin;
 cvar_t	*com_speedslog;		// 1 = buffer log, 2 = flush after each print
+cvar_t  *com_homepath;
 
 // Support for JK2 binaries --eez
 cvar_t	*com_jk2;			// searches for jk2gamex86.dll instead of jagamex86.dll
@@ -97,7 +92,6 @@ void Com_WriteConfig_f( void );
 
 //============================================================================
 
-#ifndef _XBOX
 static char	*rd_buffer;
 static int	rd_buffersize;
 static void	(*rd_flush)( char *buffer );
@@ -123,10 +117,9 @@ void Com_EndRedirect (void)
 	rd_buffersize = 0;
 	rd_flush = NULL;
 }
-#ifndef FINAL_BUILD
+#if !defined(FINAL_BUILD) && defined(_WIN32)
 #define OUTPUT_TO_BUILD_WINDOW
 #endif
-#endif	//not xbox
 
 /*
 =============
@@ -143,11 +136,11 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	char		msg[MAXPRINTMSG];
 
 	va_start (argptr,fmt);
-	vsprintf_s (msg,fmt,argptr);
+	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
 	va_end (argptr);
 
 	if ( rd_buffer ) {
-		if ((strlen (msg) + strlen(rd_buffer)) > (rd_buffersize - 1)) {
+		if ((strlen (msg) + strlen(rd_buffer)) > (unsigned)(rd_buffersize - 1)) {
 			rd_flush(rd_buffer);
 			*rd_buffer = 0;
 		}
@@ -197,7 +190,7 @@ void QDECL Com_DPrintf( const char *fmt, ...) {
 	}
 
 	va_start (argptr,fmt);
-	vsprintf_s (msg,fmt,argptr);
+	Q_vsnprintf (msg, sizeof(msg), fmt, argptr);
 	va_end (argptr);
 	
 	Com_Printf ("%s", msg);
@@ -205,7 +198,6 @@ void QDECL Com_DPrintf( const char *fmt, ...) {
 
 void Com_WriteCam ( const char *text )
 {
-#ifndef _XBOX
 	static	char	mapname[MAX_QPATH];
 	// camerafile
 	if ( !camerafile ) 
@@ -223,12 +215,10 @@ void Com_WriteCam ( const char *text )
 	}
 
 	Com_Printf( "%s\n", mapname );
-#endif
 }
 
 void Com_FlushCamFile()
 {
-#ifndef _XBOX
 	if (!camerafile)
 	{
 		// nothing to flush, right?
@@ -243,7 +233,6 @@ void Com_FlushCamFile()
 	extern	cvar_t	*sv_mapname;
 	Com_sprintf( flushedMapname, MAX_QPATH, "maps/%s_cam.map", sv_mapname->string );
 	Com_Printf("flushed all cams to %s\n", flushedMapname);
-#endif
 }
 
 /*
@@ -289,7 +278,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 //	SCR_UnprecacheScreenshot();
 
 	va_start (argptr,fmt);
-	vsprintf_s (com_errorMessage,fmt,argptr);
+	Q_vsnprintf (com_errorMessage, sizeof(com_errorMessage), fmt, argptr);
 	va_end (argptr);	
 
 	if ( code != ERR_DISCONNECT ) {
@@ -299,7 +288,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 
 	SG_Shutdown();				// close any file pointers
 	if ( code == ERR_DISCONNECT ) {
-		SV_Shutdown("Disconnect");
+		SV_Shutdown("Disconnect", qtrue);
 		CL_Disconnect();
 		CL_FlushMemory();
 		CL_StartHunkUsers();
@@ -309,7 +298,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		// If loading/saving caused the crash/error - delete the temp file
 		SG_WipeSavegame("current");	// delete file
 
-		SV_Shutdown (va("Server crashed: %s\n",  com_errorMessage));
+		SV_Shutdown (va("Server crashed: %s\n",  com_errorMessage), qtrue);
 		CL_Disconnect();
 		CL_FlushMemory();
 		CL_StartHunkUsers();
@@ -318,7 +307,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		throw ("DROPPED\n");
 	} else {
 		CL_Shutdown ();
-		SV_Shutdown (va(S_COLOR_RED"Server fatal crashed: %s\n", com_errorMessage));
+		SV_Shutdown (va(S_COLOR_RED"Server fatal crashed: %s\n", com_errorMessage), qtrue);
 	}
 
 	Com_Shutdown ();
@@ -376,13 +365,17 @@ Break it up into multiple console lines
 ==================
 */
 void Com_ParseCommandLine( char *commandLine ) {
+	int inq = 0;
 	com_consoleLines[0] = commandLine;
 	com_numConsoleLines = 1;
 
 	while ( *commandLine ) {
+		if (*commandLine == '"') {
+			inq = !inq;
+		}
 		// look for a + seperating character
 		// if commandLine came from a file, we might have real line seperators
-		if ( *commandLine == '+' || *commandLine == '\n' ) {
+		if ( (*commandLine == '+' && !inq) || *commandLine == '\n'  || *commandLine == '\r' ) {
 			if ( com_numConsoleLines == MAX_CONSOLE_LINES ) {
 				return;
 			}
@@ -431,7 +424,7 @@ be after execing the config and default.
 */
 void Com_StartupVariable( const char *match ) {
 	int		i;
-	char	*s;
+	const char	*s;
 	cvar_t	*cv;
 
 	for (i=0 ; i < com_numConsoleLines ; i++) {
@@ -535,7 +528,7 @@ void Info_Print( const char *s ) {
 Com_StringContains
 ============
 */
-char *Com_StringContains(char *str1, char *str2, int casesensitive) {
+const char *Com_StringContains(const char *str1, const char *str2, int casesensitive) {
 	int len, i, j;
 
 	len = strlen(str1) - strlen(str2);
@@ -564,9 +557,9 @@ char *Com_StringContains(char *str1, char *str2, int casesensitive) {
 Com_Filter
 ============
 */
-int Com_Filter(char *filter, char *name, int casesensitive) {
+int Com_Filter(const char *filter, const char *name, int casesensitive) {
 	char buf[MAX_TOKEN_CHARS];
-	char *ptr;
+	const char *ptr;
 	int i;
 
 	while(*filter) {
@@ -671,11 +664,11 @@ void Hunk_Clear( void )
 	Z_TagFree(TAG_HUNKALLOC);
 	Z_TagFree(TAG_HUNKMISCMODELS);
 
-	extern void CIN_CloseAllVideos();
-				CIN_CloseAllVideos();
+extern void CIN_CloseAllVideos();
+	CIN_CloseAllVideos();
 
-	extern void R_ClearStuffToStopGhoul2CrashingThings(void);
-				R_ClearStuffToStopGhoul2CrashingThings();
+	if(re.R_ClearStuffToStopGhoul2CrashingThings)
+		re.R_ClearStuffToStopGhoul2CrashingThings();
 }
 
 
@@ -846,7 +839,7 @@ int Com_EventLoop( void ) {
 			// the event buffers are only large enough to hold the
 			// exact payload, but channel messages need to be large
 			// enough to hold fragment reassembly
-			if ( (unsigned)buf.cursize > buf.maxsize ) {
+			if ( (unsigned)buf.cursize > (unsigned)buf.maxsize ) {
 				Com_Printf("Com_EventLoop: oversize packet\n");
 				continue;
 			}
@@ -943,7 +936,7 @@ A way to force a bus error for development reasons
 =================
 */
 static void Com_Crash_f( void ) {
-	* ( int * ) 0 = 0x12345678;
+	* ( volatile int * ) 0 = 0x12345678;
 }
 
 /*
@@ -952,7 +945,6 @@ Com_Init
 =================
 */
 extern void Com_InitZoneMemory();
-extern void R_InitWorldEffects();
 void Com_Init( char *commandLine ) {
 	char	*s;
 
@@ -979,8 +971,10 @@ void Com_Init( char *commandLine ) {
 		// done early so bind command exists
 		CL_InitKeyCommands();
 
+		com_homepath = Cvar_Get("com_homepath", "", CVAR_INIT);
+
 		FS_InitFilesystem ();	//uses z_malloc
-		R_InitWorldEffects();   // this doesn't do much but I want to be sure certain variables are intialized.
+		//re.R_InitWorldEffects();   // this doesn't do much but I want to be sure certain variables are intialized.
 		
 		Cbuf_AddText ("exec default.cfg\n");
 
@@ -1032,6 +1026,8 @@ void Com_Init( char *commandLine ) {
 		com_cl_running = Cvar_Get ("cl_running", "0", CVAR_ROM);
 		com_skippingcin = Cvar_Get ("skippingCinematic", "0", CVAR_ROM);
 		com_buildScript = Cvar_Get( "com_buildScript", "0", 0 );
+
+		com_bootlogo = Cvar_Get( "com_bootlogo", "1", CVAR_ARCHIVE);
 		
 		if ( com_developer && com_developer->integer ) {
 			Cmd_AddCommand ("error", Com_Error_f);
@@ -1059,13 +1055,6 @@ void Com_Init( char *commandLine ) {
 		
 		CL_Init();
 
-#ifdef _XBOX
-		// Experiment. Sound memory never gets freed, move it earlier. This
-		// will also let us play movies sooner, if we need to.
-		extern void CL_StartSound(void);
-		CL_StartSound();
-#endif
-
 		Sys_ShowConsole( com_viewlog->integer, qfalse );
 		
 		// set com_frameTime so that if a map is started on the
@@ -1074,21 +1063,13 @@ void Com_Init( char *commandLine ) {
 		com_frameTime = Com_Milliseconds();
 
 		// add + commands from command line
-//#ifndef _XBOX
 		if ( !Com_AddStartupCommands() ) {
-//#ifdef NDEBUG
 			// if the user didn't give any commands, run default action
-//			if ( !com_dedicated->integer ) 
+			if ( com_bootlogo->integer )
 			{
 				Cbuf_AddText ("cinematic openinglogos\n");
-//				if( !com_introPlayed->integer ) {
-//					Cvar_Set( com_introPlayed->name, "1" );
-//					Cvar_Set( "nextmap", "cinematic intro" );
-//				}
 			}
-//#endif	
 		}
-//#endif
 		com_fullyInitialized = qtrue;
 		Com_Printf ("--- Common Initialization Complete ---\n");
 
@@ -1244,7 +1225,11 @@ void G2Time_ResetTimers(void);
 void G2Time_ReportTimers(void);
 #endif
 
+void Sys_UnloadGamePending();
+
+#ifdef _MSC_VER
 #pragma warning (disable: 4701)	//local may have been used without init (timing info vars)
+#endif
 void Com_Frame( void ) {
 try 
 {
@@ -1253,7 +1238,6 @@ try
 	static int	lastTime;
 
 	// write config file if anything changed
-#ifndef _XBOX
 	Com_WriteConfiguration(); 
 
 	// if "viewlog" has been modified, show or hide the log console
@@ -1261,7 +1245,6 @@ try
 		Sys_ShowConsole( com_viewlog->integer, qfalse );
 		com_viewlog->modified = qfalse;
 	}
-#endif
 
 	//
 	// main event loop
@@ -1305,19 +1288,8 @@ try
 	//
 	// client system
 	//
-#ifdef _XBOX
-//	extern void G_DemoFrame();
-
-//	G_DemoFrame();
-	extern bool TestDemoTimer();
-	extern void PlayDemo();
-	if ( TestDemoTimer())
-	{
-		PlayDemo();
-	}
 
 
-#endif
 //	if ( !com_dedicated->integer ) 
 	{
 		//
@@ -1362,7 +1334,6 @@ try
 		Com_Printf("fr:%i all:%3i sv:%3i ev:%3i cl:%3i gm:%3i tr:%3i pvs:%3i rf:%3i bk:%3i\n", 
 					com_frameNumber, all, sv, ev, cl, time_game, timeInTrace, timeInPVSCheck, time_frontend, time_backend);
 
-#ifndef _XBOX
 		// speedslog
 		if ( com_speedslog && com_speedslog->integer )
 		{
@@ -1398,7 +1369,6 @@ try
 				bComma=true;
 			}
 		}
-#endif
 
 		timeInTrace = timeInPVSCheck = 0;
 	}
@@ -1427,6 +1397,7 @@ try
 	com_frameNumber++;
 }//try
 	catch (const char* reason) {
+		Sys_UnloadGamePending();
 		Com_Printf (reason);
 		return;			// an ERR_DROP was thrown
 	}
@@ -1434,14 +1405,16 @@ try
 #ifdef G2_PERFORMANCE_ANALYSIS
 	if (com_G2Report && com_G2Report->integer)
 	{
-		G2Time_ReportTimers();
+		re.G2Time_ReportTimers();
 	}
 
-	G2Time_ResetTimers();
+	re.G2Time_ResetTimers();
 #endif
 }
 
+#ifdef _MSC_VER
 #pragma warning (default: 4701)	//local may have been used without init
+#endif
 
 /*
 =================

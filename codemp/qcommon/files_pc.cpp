@@ -11,8 +11,6 @@
 #include "client/client.h"
 #include "files.h"
 
-#include "platform.h"
-
 // TTimo - https://zerowing.idsoftware.com/bugzilla/show_bug.cgi?id=540
 // wether we did a reorder on the current search path when joining the server
 static qboolean fs_reordered;
@@ -182,7 +180,7 @@ void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 	// we are using direct malloc instead of Z_Malloc here, so it
 	// probably won't work on a mac... Its only for developers anyway...
 	buf = (unsigned char *)malloc( len );
-	if (fread( buf, 1, len, f ) != len)
+	if (fread( buf, 1, len, f ) != (unsigned)len)
 		Com_Error( ERR_FATAL, "Short read in FS_Copyfiles()\n" );
 	fclose( f );
 
@@ -194,7 +192,7 @@ void FS_CopyFile( char *fromOSPath, char *toOSPath ) {
 	if ( !f ) {
 		return;
 	}
-	if (fwrite( buf, 1, len, f ) != len)
+	if (fwrite( buf, 1, len, f ) != (unsigned)len)
 		Com_Error( ERR_FATAL, "Short write in FS_Copyfiles()\n" );
 	fclose( f );
 	free( buf );
@@ -1473,7 +1471,8 @@ static pack_t *FS_LoadZipFile( const char *zipfile, const char *basename )
 	unz_global_info gi;
 	char			filename_inzip[MAX_ZPATH];
 	unz_file_info	file_info;
-	int				i, len;
+	int				len;
+	size_t			i;
 	long			hash;
 	int				fs_numHeaderLongs;
 	int				*fs_headerLongs;
@@ -1515,8 +1514,8 @@ static pack_t *FS_LoadZipFile( const char *zipfile, const char *basename )
 	pack = (pack_t *)Z_Malloc( sizeof( pack_t ) + i * sizeof(fileInPack_t *), TAG_FILESYS, qtrue );
 	pack->hashSize = i;
 	pack->hashTable = (fileInPack_t **) (((char *) pack) + sizeof( pack_t ));
-	for(i = 0; i < pack->hashSize; i++) {
-		pack->hashTable[i] = NULL;
+	for(int j = 0; j < pack->hashSize; j++) {
+		pack->hashTable[j] = NULL;
 	}
 
 	Q_strncpyz( pack->pakFilename, zipfile, sizeof( pack->pakFilename ) );
@@ -1994,7 +1993,7 @@ int	FS_GetModList( char *listbuf, int bufsize ) {
 			continue;
 		}
 		// we drop "base" "." and ".."
-		if (Q_stricmp(name, "base") && Q_stricmpn(name, ".", 1)) {
+		if (Q_stricmp(name, BASEGAME) && Q_stricmpn(name, ".", 1)) {
 			// now we need to find some .pk3 files to validate the mod
 			// NOTE TTimo: (actually I'm not sure why .. what if it's a mod under developement with no .pk3?)
 			// we didn't keep the information when we merged the directory names, as to what OS Path it was found under
@@ -2309,7 +2308,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 	// this fixes the case where fs_basepath is the same as fs_cdpath
 	// which happens on full installs
 	for ( sp = fs_searchpaths ; sp ; sp = sp->next ) {
-		if ( sp->dir && !Q_stricmp(sp->dir->path, path) && !Q_stricmp(sp->dir->gamedir, dir)) {
+		if ( sp->dir && Sys_PathCmp(sp->dir->path, path) && !Q_stricmp(sp->dir->gamedir, dir)) {
 			return;			// we've already got this one
 		}
 	}
@@ -2345,7 +2344,7 @@ static void FS_AddGameDirectory( const char *path, const char *dir ) {
 		sorted[i] = pakfiles[i];
 	}
 
-	qsort( sorted, numfiles, 4, paksort );
+	qsort( sorted, numfiles, sizeof(char*), paksort );
 
 	for ( i = 0 ; i < numfiles ; i++ ) {
 		pakfile = FS_BuildOSPath( path, dir, sorted[i] );
@@ -2510,7 +2509,7 @@ qboolean FS_ComparePaks( char *neededpaks, int len, qboolean dlstring ) {
 
 				// Find out whether it might have overflowed the buffer and don't add this file to the
 				// list if that is the case.
-				if(strlen(origpos) + (origpos - neededpaks) >= len - 1)
+				if(strlen(origpos) + (origpos - neededpaks) >= (unsigned)(len - 1))
 				{
 					*origpos = '\0';
 					break;
@@ -2603,7 +2602,7 @@ FS_Startup
 ================
 */
 void FS_Startup( const char *gameName ) {
-        const char *homePath;
+	const char *homePath;
 
 	Com_Printf( "----- FS_Startup -----\n" );
 
@@ -2630,34 +2629,43 @@ void FS_Startup( const char *gameName ) {
 	if (fs_basepath->string[0]) {
 		FS_AddGameDirectory( fs_basepath->string, gameName );
 	}
+	
+#ifdef MACOS_X
+	fs_apppath = Cvar_Get ("fs_apppath", Sys_DefaultAppPath(), CVAR_INIT|CVAR_PROTECTED );
+	// Make MacOSX also include the base path included with the .app bundle
+	if (fs_apppath->string[0]) {
+		FS_AddGameDirectory( fs_apppath->string, gameName );
+	}
+#endif
+	
 	// fs_homepath is somewhat particular to *nix systems, only add if relevant
 	// NOTE: same filtering below for mods and basegame
-	if (fs_basepath->string[0] && Q_stricmp(fs_homepath->string,fs_basepath->string)) {
+	if (fs_homepath->string[0] && !Sys_PathCmp(fs_homepath->string, fs_basepath->string)) {
 		FS_AddGameDirectory ( fs_homepath->string, gameName );
 	}
         
 	// check for additional base game so mods can be based upon other mods
-	if ( fs_basegame->string[0] && !Q_stricmp( gameName, BASEGAME ) && Q_stricmp( fs_basegame->string, gameName ) ) {
+	if ( fs_basegame->string[0] && Q_stricmp( fs_basegame->string, gameName ) ) {
 		if (fs_cdpath->string[0]) {
 			FS_AddGameDirectory(fs_cdpath->string, fs_basegame->string);
 		}
 		if (fs_basepath->string[0]) {
 			FS_AddGameDirectory(fs_basepath->string, fs_basegame->string);
 		}
-		if (fs_homepath->string[0] && Q_stricmp(fs_homepath->string,fs_basepath->string)) {
+		if (fs_homepath->string[0] && !Sys_PathCmp(fs_homepath->string, fs_basepath->string)) {
 			FS_AddGameDirectory(fs_homepath->string, fs_basegame->string);
 		}
 	}
 
 	// check for additional game folder for mods
-	if ( fs_gamedirvar->string[0] && !Q_stricmp( gameName, BASEGAME ) && Q_stricmp( fs_gamedirvar->string, gameName ) ) {
+	if ( fs_gamedirvar->string[0] && Q_stricmp( fs_gamedirvar->string, gameName ) ) {
 		if (fs_cdpath->string[0]) {
 			FS_AddGameDirectory(fs_cdpath->string, fs_gamedirvar->string);
 		}
 		if (fs_basepath->string[0]) {
 			FS_AddGameDirectory(fs_basepath->string, fs_gamedirvar->string);
 		}
-		if (fs_homepath->string[0] && Q_stricmp(fs_homepath->string,fs_basepath->string)) {
+		if (fs_homepath->string[0] && !Sys_PathCmp(fs_homepath->string, fs_basepath->string)) {
 			FS_AddGameDirectory(fs_homepath->string, fs_gamedirvar->string);
 		}
 	}
@@ -2984,7 +2992,7 @@ void FS_PureServerSetReferencedPaks( const char *pakSums, const char *pakNames )
 		fs_serverReferencedPaks[i] = atoi( Cmd_Argv( i ) );
 	}
 
-	for (i = 0 ; i < ARRAY_LEN(fs_serverReferencedPakNames); i++)
+	for (i = 0 ; i < (int)ARRAY_LEN(fs_serverReferencedPakNames); i++)
 	{
 		if(fs_serverReferencedPakNames[i])
 			Z_Free(fs_serverReferencedPakNames[i]);
@@ -3171,4 +3179,12 @@ int		FS_FTell( fileHandle_t f ) {
 
 void	FS_Flush( fileHandle_t f ) {
 	fflush(fsh[f].handleFiles.file.o);
+}
+
+const char *FS_GetCurrentGameDir(bool emptybase)
+{
+	if(fs_gamedirvar->string[0])
+		return fs_gamedirvar->string;
+
+	return emptybase ? "" : BASEGAME;
 }

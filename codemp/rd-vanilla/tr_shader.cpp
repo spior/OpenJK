@@ -1,6 +1,3 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 #include "tr_local.h"
 
 // tr_shader.c -- this file deals with the parsing and definition of shaders
@@ -208,7 +205,7 @@ static int Shader_CompressBracedSection( char **data_p, char **name, char **text
 				if( c == '{' && !*name ) {
 					*name = *data_p;
 					if( *(*name) <= ' ' ) (*name)++;
-					*nameLength = (int)out - (int)*name;
+					*nameLength = out - *name;
 					if( (*name)[*nameLength-1] <= ' ' ) (*nameLength)--;
 					*text = out;
 				}
@@ -240,9 +237,9 @@ static int Shader_CompressBracedSection( char **data_p, char **name, char **text
 
 	if( *text && *(*text) <= ' ' ) (*text)++;			// remove begining white char
 	if( out > *data_p && out[-1] <= ' ' ) out--;		// remove ending white char
-	if( *text ) *textLength = (int)out - (int)*text;	// compressed text length
+	if( *text ) *textLength = out - *text;	// compressed text length
 
-	c = (int)out - (int)*data_p;						// uncompressed chars parsed
+	c = out - *data_p;						// uncompressed chars parsed
 
 	*data_p = in;
 
@@ -366,7 +363,9 @@ static void Shader_SkipRestOfLine ( const char **data ) {
 #endif
 
 
+#ifndef USE_NEW_SHADER_HASH
 static char *s_shaderText;
+#endif
 
 // the shader is parsed into these global variables, then copied into
 // dynamically allocated memory if it is valid.
@@ -386,7 +385,7 @@ static	shader_t*		hashTable[FILE_HASH_SIZE];
 typedef struct shaderText_s {   // 8 bytes + strlen(text)+1
 	struct shaderText_s *next;	// linked list hashtable
 	char *name;					// shader name
-	char text[0];				// shader text
+	char text[1];				// shader text
 } shaderText_t;
 
 static shaderText_t *shaderTextHashTable[MAX_SHADERTEXT_HASH];
@@ -1218,7 +1217,7 @@ static void ParseSurfaceSprites( const char *_text, shaderStage_t *stage )
 	stage->ss->facing = SURFSPRITE_FACING_NORMAL;
 
 	// A vertical parameter that needs a default regardless
-	stage->ss->vertSkew;
+	stage->ss->vertSkew = 0.0f;
 
 	// These are effect parameters that need defaults nonetheless.
 	stage->ss->fxDuration = 1000;		// 1 second
@@ -2447,7 +2446,7 @@ void ParseMaterial( const char **text )
 // this table is also present in q3map
 
 typedef struct {
-	char	*name;
+	const char	*name;
 	int		clearSolid, surfaceFlags, contents;
 } infoParm_t;
 
@@ -2896,7 +2895,7 @@ static qboolean CollapseMultitexture( void ) {
 			return qfalse;
 		}
 	}
-	if ( stages[0].alphaGen == CGEN_WAVEFORM )
+	if ( stages[0].alphaGen == AGEN_WAVEFORM )
 	{
 		if ( memcmp( &stages[0].alphaWave,
 					 &stages[1].alphaWave,
@@ -4251,7 +4250,7 @@ static void LoadShaderFromBuffer( char *buff )
 		q3ShaderBug = 0;
 
 		// create the new shader
-		size = sizeof(shaderText_t) + (textLength+1) + (nameLength+1);
+		size = sizeof(shaderText_t) + (textLength) + (nameLength+1);
 		st = (shaderText_t *)ri.Hunk_Alloc( size, h_low );
 
 		// copy shader name and shader text

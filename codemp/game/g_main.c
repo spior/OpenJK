@@ -241,6 +241,10 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	// range are NEVER anything but clients
 	level.num_entities = MAX_CLIENTS;
 
+	for ( i=0 ; i<MAX_CLIENTS ; i++ ) {
+		g_entities[i].classname = "clientslot";
+	}
+
 	// let the server system know where the entites are
 	gi.LocateGameData( (sharedEntity_t *)level.gentities, level.num_entities, sizeof( gentity_t ), 
 		&level.clients[0].ps, sizeof( level.clients[0] ) );
@@ -2500,7 +2504,6 @@ void CheckTournament( void ) {
 void G_KickAllBots(void)
 {
 	int i;
-	char netname[36];
 	gclient_t	*cl;
 
 	for ( i=0 ; i< sv_maxclients.integer ; i++ )
@@ -2510,13 +2513,11 @@ void G_KickAllBots(void)
 		{
 			continue;
 		}
-		if ( !(g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT) )
+		if ( !(g_entities[i].r.svFlags & SVF_BOT) )
 		{
 			continue;
 		}
-		strcpy(netname, cl->pers.netname);
-		Q_CleanStr(netname);
-		gi.SendConsoleCommand( EXEC_INSERT, va("kick \"%s\"\n", netname) );
+		gi.SendConsoleCommand( EXEC_INSERT, va("clientkick %d\n", i) );
 	}
 }
 

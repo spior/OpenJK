@@ -1,14 +1,10 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 // tr_init.c -- functions that are not called every frame
 
 #include "tr_local.h"
+#include "../rd-common/tr_common.h"
 #include "tr_WorldEffects.h"
-#include "tr_font.h"
 #include "qcommon/MiniHeap.h"
 #include "G2_local.h"
-#include "libpng/png.h"
 
 //#ifdef __USEA3D
 //// Defined in snd_a3dg_refcommon.c
@@ -140,6 +136,8 @@ cvar_t	*r_subdivisions;
 cvar_t	*r_lodCurveError;
 
 cvar_t	*r_fullscreen = 0;
+cvar_t	*r_noborder;
+cvar_t	*r_centerWindow;
 
 cvar_t	*r_customwidth;
 cvar_t	*r_customheight;
@@ -986,6 +984,11 @@ void GfxInfo_f( void )
 		"windowed",
 		"fullscreen"
 	};
+	const char *noborderstrings[] =
+	{
+		"",
+		"noborder "
+	};
 
 	const char *tc_table[] = 
 	{
@@ -1002,7 +1005,7 @@ void GfxInfo_f( void )
 	Com_Printf ("GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
 	Com_Printf ("GL_MAX_ACTIVE_TEXTURES_ARB: %d\n", glConfig.maxActiveTextures );
 	Com_Printf ("\nPIXELFORMAT: color(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
-	Com_Printf ("MODE: %d, %d x %d %s hz:", r_mode->integer, glConfig.vidWidth, glConfig.vidHeight, fsstrings[r_fullscreen->integer == 1] );
+	Com_Printf ("MODE: %d, %d x %d %s%s hz:", r_mode->integer, glConfig.vidWidth, glConfig.vidHeight, r_fullscreen->integer == 0 ? noborderstrings[r_noborder->integer == 1] : noborderstrings[0] ,fsstrings[r_fullscreen->integer == 1] );
 	if ( glConfig.displayFrequency )
 	{
 		Com_Printf ("%d\n", glConfig.displayFrequency );
@@ -1056,7 +1059,18 @@ void GfxInfo_f( void )
 	Com_Printf ("compressed lightmaps: %s\n", enablestrings[(r_ext_compressed_lightmaps->integer != 0 && glConfig.textureCompression != TC_NONE)] );
 	Com_Printf ("texture compression method: %s\n", tc_table[glConfig.textureCompression] );
 	Com_Printf ("anisotropic filtering: %s  ", enablestrings[(r_ext_texture_filter_anisotropic->integer != 0) && glConfig.maxTextureFilterAnisotropy] );
-		Com_Printf ("(%f of %f)\n", r_ext_texture_filter_anisotropic->value, glConfig.maxTextureFilterAnisotropy );
+	if (r_ext_texture_filter_anisotropic->integer != 0 && glConfig.maxTextureFilterAnisotropy)
+	{
+		if (Q_isintegral(r_ext_texture_filter_anisotropic->value))
+			Com_Printf ("(%i of ", (int)r_ext_texture_filter_anisotropic->value);
+		else
+			Com_Printf ("(%f of ", r_ext_texture_filter_anisotropic->value);
+
+		if (Q_isintegral(glConfig.maxTextureFilterAnisotropy))
+			Com_Printf ("%i)\n", (int)glConfig.maxTextureFilterAnisotropy);
+		else
+			Com_Printf ("%f)\n", glConfig.maxTextureFilterAnisotropy);
+	}
 	Com_Printf ("Dynamic Glow: %s\n", enablestrings[r_DynamicGlow->integer] );
 	if (g_bTextureRectangleHack) Com_Printf ("Dynamic Glow ATI BAD DRIVER HACK %s\n", enablestrings[g_bTextureRectangleHack] );
 
@@ -1097,11 +1111,7 @@ void R_Register( void )
 	r_ext_gamma_control					= ri.Cvar_Get( "r_ext_gamma_control",				"1",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_ext_multitexture					= ri.Cvar_Get( "r_ext_multitexture",				"1",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_ext_compiled_vertex_array			= ri.Cvar_Get( "r_ext_compiled_vertex_array",		"1",						CVAR_ARCHIVE|CVAR_LATCH );
-#ifdef __linux__ // broken on linux
-	r_ext_texture_env_add				= ri.Cvar_Get( "r_ext_texture_env_add",				"0",						CVAR_ARCHIVE|CVAR_LATCH );
-#else
 	r_ext_texture_env_add				= ri.Cvar_Get( "r_ext_texture_env_add",				"1",						CVAR_ARCHIVE|CVAR_LATCH );
-#endif
 	r_ext_texture_filter_anisotropic	= ri.Cvar_Get( "r_ext_texture_filter_anisotropic",	"16",						CVAR_ARCHIVE );
 	r_environmentMapping				= ri.Cvar_Get( "r_environmentMapping",				"1",						CVAR_ARCHIVE );
 	r_DynamicGlow						= ri.Cvar_Get( "r_DynamicGlow",						"0",						CVAR_ARCHIVE );
@@ -1119,17 +1129,15 @@ void R_Register( void )
 	r_texturebitslm						= ri.Cvar_Get( "r_texturebitslm",					"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_colorbits							= ri.Cvar_Get( "r_colorbits",						"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_stereo							= ri.Cvar_Get( "r_stereo",							"0",						CVAR_ARCHIVE|CVAR_LATCH );
-#ifdef __linux__
-	r_stencilbits						= ri.Cvar_Get( "r_stencilbits",						"0",						CVAR_ARCHIVE|CVAR_LATCH );
-#else
 	r_stencilbits						= ri.Cvar_Get( "r_stencilbits",						"8",						CVAR_ARCHIVE|CVAR_LATCH );
-#endif
 	r_depthbits							= ri.Cvar_Get( "r_depthbits",						"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_overBrightBits					= ri.Cvar_Get( "r_overBrightBits",					"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_mapOverBrightBits					= ri.Cvar_Get( "r_mapOverBrightBits",				"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_ignorehwgamma						= ri.Cvar_Get( "r_ignorehwgamma",					"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_mode								= ri.Cvar_Get( "r_mode",							"4",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_fullscreen						= ri.Cvar_Get( "r_fullscreen",						"1",						CVAR_ARCHIVE|CVAR_LATCH );
+	r_noborder							= ri.Cvar_Get( "r_noborder",						"0",						CVAR_ARCHIVE|CVAR_LATCH );
+	r_centerWindow						= ri.Cvar_Get( "r_centerWindow",					"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_customwidth						= ri.Cvar_Get( "r_customwidth",						"1600",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_customheight						= ri.Cvar_Get( "r_customheight",					"1024",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_simpleMipMaps						= ri.Cvar_Get( "r_simpleMipMaps",					"1",						CVAR_ARCHIVE|CVAR_LATCH );
@@ -1158,11 +1166,7 @@ void R_Register( void )
 	r_textureMode						= ri.Cvar_Get( "r_textureMode",						"GL_LINEAR_MIPMAP_NEAREST",	CVAR_ARCHIVE );
 	r_swapInterval						= ri.Cvar_Get( "r_swapInterval",					"0",						CVAR_ARCHIVE );
 	r_markcount							= ri.Cvar_Get( "r_markcount",						"100",						CVAR_ARCHIVE );
-#ifdef __MACOS__
-	r_gamma								= ri.Cvar_Get( "r_gamma",							"1.2",						CVAR_ARCHIVE );
-#else
 	r_gamma								= ri.Cvar_Get( "r_gamma",							"1",						CVAR_ARCHIVE );
-#endif
 	r_facePlaneCull						= ri.Cvar_Get( "r_facePlaneCull",					"1",						CVAR_ARCHIVE );
 	r_cullRoofFaces						= ri.Cvar_Get( "r_cullRoofFaces",					"0",						CVAR_CHEAT ); //attempted smart method of culling out upwards facing surfaces on roofs for automap shots -rww
 	r_roofCullCeilDist					= ri.Cvar_Get( "r_roofCullCeilDist",				"256",						CVAR_CHEAT ); //attempted smart method of culling out upwards facing surfaces on roofs for automap shots -rww
@@ -1297,7 +1301,7 @@ void R_Init( void ) {
 
 #ifndef FINAL_BUILD
 	if ( (intptr_t)tess.xyz & 15 ) {
-		Com_Printf( "WARNING: tess.xyz not 16 byte aligned (%x)\n",(int)tess.xyz & 15 );
+		Com_Printf( "WARNING: tess.xyz not 16 byte aligned (%x)\n",(intptr_t)tess.xyz & 15 );
 	}
 #endif
 	//
@@ -1328,6 +1332,7 @@ void R_Init( void ) {
 	}
 	R_InitFogTable();
 
+	R_ImageLoader_Init();
 	R_NoiseInit();
 	R_Register();
 
@@ -1519,7 +1524,6 @@ extern void R_SVModelInit( void ); //tr_model.cpp
 extern void R_AutomapElevationAdjustment( float newHeight ); //tr_world.cpp
 extern qboolean R_InitializeWireframeAutomap( void ); //tr_world.cpp
 
-static void RE_LoadImage( const char *shortname, byte **pic, int *width, int *height, int *format ) { R_LoadImage( shortname, pic, width, height, (GLenum*)format ); }
 extern void R_LoadDataImage( const char *name, byte **pic, int *width, int *height);
 extern void R_InvertImage(byte *data, int width, int height, int depth);
 extern void R_Resample(byte *source, int swidth, int sheight, byte *dest, int dwidth, int dheight, int components);
@@ -1720,7 +1724,7 @@ Q_EXPORT refexport_t* QDECL GetRefAPI( int apiVersion, refimport_t *rimp ) {
 	re.LoadDataImage						= R_LoadDataImage;
 	re.InvertImage							= R_InvertImage;
 	re.Resample								= R_Resample;
-	re.LoadImageJA							= RE_LoadImage;
+	re.LoadImageJA							= R_LoadImage;
 	re.CreateAutomapImage					= R_CreateAutomapImage;
 	re.SavePNG								= RE_SavePNG;
 

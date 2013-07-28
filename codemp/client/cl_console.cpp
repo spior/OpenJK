@@ -18,7 +18,7 @@ cvar_t		*con_notifytime;
 
 #define	DEFAULT_CONSOLE_WIDTH	78
 
-vec4_t	console_color = {1.0, 1.0, 1.0, 1.0};
+vec4_t	console_color = {0.509f, 0.609f, 0.847f, 1.0f};
 
 
 /*
@@ -140,8 +140,8 @@ Save the console contents out to a file
 */
 void Con_Dump_f (void)
 {
-	int				l, x, i;
-	short			*line;
+	int		l, x, i;
+	short	*line;
 	fileHandle_t	f;
 	int		bufferlen;
 	char	*buffer;
@@ -156,14 +156,14 @@ void Con_Dump_f (void)
 	Q_strncpyz( filename, Cmd_Argv( 1 ), sizeof( filename ) );
 	COM_DefaultExtension( filename, sizeof( filename ), ".txt" );
 
-	Com_Printf ("Dumped console text to %s.\n", filename );
-
 	f = FS_FOpenFileWrite( filename );
 	if (!f)
 	{
 		Com_Printf ("ERROR: couldn't open %s.\n", filename);
 		return;
 	}
+
+	Com_Printf ("Dumped console text to %s.\n", filename );
 
 	// skip empty lines
 	for (l = con.current - con.totallines + 1 ; l <= con.current ; l++)
@@ -206,6 +206,7 @@ void Con_Dump_f (void)
 		FS_Write(buffer, strlen(buffer), f);
 	}
 
+	Hunk_FreeTempMemory( buffer );
 	FS_FCloseFile( f );
 }
 
@@ -648,10 +649,9 @@ void Con_DrawSolidConsole( float frac ) {
 		SCR_DrawPic( 0, 0, SCREEN_WIDTH, (float) y, cls.consoleShader );
 	}
 
-	const vec4_t color = { 0.509f, 0.609f, 0.847f,  1.0f};
 	// draw the bottom bar and version number
 
-	re.SetColor( color );
+	re.SetColor( console_color );
 	re.DrawStretchPic( 0, y, SCREEN_WIDTH, 2, 0, 0, 0, 0, cls.whiteShader );
 
 	i = strlen( JK_VERSION );
@@ -672,7 +672,7 @@ void Con_DrawSolidConsole( float frac ) {
 	if (con.display != con.current)
 	{
 	// draw arrows to show the buffer is backscrolled
-		re.SetColor( g_color_table[ColorIndex(COLOR_RED)] );
+		re.SetColor( console_color );
 		for (x=0 ; x<con.linewidth ; x+=4)
 			SCR_DrawSmallChar( (int) (con.xadjust + (x+1)*SMALLCHAR_WIDTH), y, '^' );
 		y -= SMALLCHAR_HEIGHT;

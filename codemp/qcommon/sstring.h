@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../qcommon/q_shared.h"
+
 // Filename:-	sstring.h
 //
 // Gil's string template, used to replace Microsoft's <string> vrsion which doesn't compile under certain stl map<>
@@ -75,6 +77,10 @@ public:
 	int length() const
 	{
 		return strlen(mStorage.data);
+	}
+	bool empty() const
+	{
+		return mStorage.data[0] == '\0'; //Raz: might want to check MaxSize instead?
 	}
 	bool operator==(const sstring<MaxSize> &o) const
 	{

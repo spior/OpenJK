@@ -763,7 +763,7 @@ void NPC_SetWeapons( gentity_t *ent )
 {
 	int			bestWeap = WP_NONE;
 	int			curWeap;
-	int			weapons = NPC_WeaponsForTeam( ent->client->playerTeam, ent->spawnflags, ent->NPC_type );
+	int			weapons = NPC_WeaponsForTeam( (team_t)ent->client->playerTeam, ent->spawnflags, ent->NPC_type );
 
 	ent->client->ps.stats[STAT_WEAPONS] = 0;
 	for ( curWeap = WP_SABER; curWeap < WP_NUM_WEAPONS; curWeap++ )
@@ -4033,7 +4033,7 @@ void NPC_Kill_f( void )
 	int			n;
 	gentity_t	*player;
 	char		name[1024];
-	team_t		killTeam = TEAM_FREE;
+	npcteam_t	killTeam = NPCTEAM_FREE;
 	qboolean	killNonSF = qfalse;
 
 	gi.Argv(2, name, 1024);
@@ -4071,9 +4071,9 @@ void NPC_Kill_f( void )
 		}
 		else
 		{
-			killTeam = (team_t)GetIDForString( TeamTable, name );
+			killTeam = GetIDForString( TeamTable, name );
 
-			if ( killTeam == TEAM_FREE )
+			if ( killTeam == NPCTEAM_FREE )
 			{
 				Com_Printf( S_COLOR_RED"NPC_Kill Error: team '%s' not recognized\n", name );
 				Com_Printf( S_COLOR_RED"Valid team names are:\n");
@@ -4120,7 +4120,7 @@ void NPC_Kill_f( void )
 		}
 		else if ( player && player->NPC && player->client )
 		{
-			if ( killTeam != TEAM_FREE )
+			if ( killTeam != NPCTEAM_FREE )
 			{
 				if ( player->client->playerTeam == killTeam )
 				{

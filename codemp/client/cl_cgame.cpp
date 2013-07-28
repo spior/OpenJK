@@ -498,7 +498,7 @@ CL_ShutdonwCGame
 
 ====================
 */
-void CL_ShutdownCGame( void ) {
+void CL_ShutdownCGame( qboolean delayFreeVM ) {
 	Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CGAME );
 
 	if ( !cls.cgameStarted )
@@ -633,7 +633,6 @@ or bursted delayed packets.
 #define	RESET_TIME	500
 
 void CL_AdjustTimeDelta( void ) {
-	int		resetTime;
 	int		newDelta;
 	int		deltaDelta;
 
@@ -642,13 +641,6 @@ void CL_AdjustTimeDelta( void ) {
 	// the delta never drifts when replaying a demo
 	if ( clc.demoplaying ) {
 		return;
-	}
-
-	// if the current time is WAY off, just correct to the current value
-	if ( com_sv_running->integer ) {
-		resetTime = 100;
-	} else {
-		resetTime = RESET_TIME;
 	}
 
 	newDelta = cl.snap.serverTime - cls.realtime;

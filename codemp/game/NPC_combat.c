@@ -69,7 +69,7 @@ qboolean G_TeamEnemy( gentity_t *self )
 	int	i;
 	gentity_t	*ent;
 
-	if ( !self->client || self->client->playerTeam == TEAM_FREE )
+	if ( !self->client || self->client->playerTeam == NPCTEAM_FREE )
 	{
 		return qfalse;
 	}
@@ -1423,6 +1423,10 @@ qboolean ValidEnemy(gentity_t *ent)
 				return qtrue;
 			}
 			else if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR )
+			{//don't go after spectators
+				return qfalse;
+			}
+			else if ( ent->client->tempSpectate >= level.time )
 			{//don't go after spectators
 				return qfalse;
 			}

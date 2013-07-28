@@ -6,10 +6,6 @@
 #include "GenericParser2.h"
 #include "stringed_ingame.h"
 #include "qcommon/game_version.h"
-#ifndef __linux__
-#include "qcommon/platform.h"
-#endif
-
 #include "../server/NPCNav/navigator.h"
 
 #define	MAXPRINTMSG	4096
@@ -51,7 +47,7 @@ cvar_t	*com_terrainPhysics; //rwwRMG - added
 
 cvar_t	*com_version;
 cvar_t	*com_buildScript;	// for automated data building scripts
-cvar_t	*com_introPlayed;
+cvar_t	*com_bootlogo;
 cvar_t	*cl_paused;
 cvar_t	*sv_paused;
 cvar_t	*com_cameraMode;
@@ -132,7 +128,7 @@ void QDECL Com_Printf( const char *fmt, ... ) {
 	va_end (argptr);
 
 	if ( rd_buffer ) {
-		if ((strlen (msg) + strlen(rd_buffer)) > (rd_buffersize - 1)) {
+		if ((strlen (msg) + strlen(rd_buffer)) > (size_t)(rd_buffersize - 1)) {
 			rd_flush(rd_buffer);
 			*rd_buffer = 0;
 		}
@@ -230,7 +226,7 @@ void QDECL Com_OPrintf( const char *fmt, ...)
 #ifdef _WIN32
 	OutputDebugString(msg);
 #else
-	printf(msg);
+	printf("%s", msg);
 #endif
 }
 
@@ -294,7 +290,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 
 	if ( code == ERR_SERVERDISCONNECT ) {
 		CL_Disconnect( qtrue );
-		CL_FlushMemory( );
+		CL_FlushMemory( qtrue );
 		com_errorEntered = qfalse;
 
 		throw ("DISCONNECTED\n");
@@ -302,7 +298,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		Com_Printf ("********************\nERROR: %s\n********************\n", com_errorMessage);
 		SV_Shutdown (va("Server crashed: %s\n",  com_errorMessage));
 		CL_Disconnect( qtrue );
-		CL_FlushMemory( );
+		CL_FlushMemory( qtrue );
 		com_errorEntered = qfalse;
 
 		throw ("DROPPED\n");
@@ -310,7 +306,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		SV_Shutdown( "Server didn't have CD\n" );
 		if ( com_cl_running && com_cl_running->integer ) {
 			CL_Disconnect( qtrue );
-			CL_FlushMemory( );
+			CL_FlushMemory( qtrue );
 			com_errorEntered = qfalse;
 		} else {
 			Com_Printf("Server didn't have CD\n" );
@@ -377,13 +373,17 @@ Break it up into multiple console lines
 ==================
 */
 void Com_ParseCommandLine( char *commandLine ) {
+	int inq = 0;
 	com_consoleLines[0] = commandLine;
 	com_numConsoleLines = 1;
 
 	while ( *commandLine ) {
+		if (*commandLine == '"') {
+			inq = !inq;
+		}
 		// look for a + seperating character
 		// if commandLine came from a file, we might have real line seperators
-		if ( *commandLine == '+' || *commandLine == '\n' ) {
+		if ( (*commandLine == '+' && !inq) || *commandLine == '\n'  || *commandLine == '\r' ) {
 			if ( com_numConsoleLines == MAX_CONSOLE_LINES ) {
 				return;
 			}
@@ -431,10 +431,9 @@ be after execing the config and default.
 ===============
 */
 void Com_StartupVariable( const char *match ) {
-	int		i;
 	char	*s;
 
-	for (i=0 ; i < com_numConsoleLines ; i++) {
+	for (int i=0 ; i < com_numConsoleLines ; i++) {
 		Cmd_TokenizeString( com_consoleLines[i] );
 		if ( strcmp( Cmd_Argv(0), "set" ) ) {
 			continue;
@@ -444,7 +443,7 @@ void Com_StartupVariable( const char *match ) {
 
 		if(!match || !strcmp(s, match))
 		{
-			if(Cvar_Flags(s) == CVAR_NONEXISTENT)
+			if((unsigned)Cvar_Flags(s) == CVAR_NONEXISTENT)
 				Cvar_Get(s, Cmd_Argv(2), CVAR_USER_CREATED);
 			else
 				Cvar_Set2(s, Cmd_Argv(2), qfalse);
@@ -979,7 +978,7 @@ int Com_EventLoop( void ) {
 			// the event buffers are only large enough to hold the
 			// exact payload, but channel messages need to be large
 			// enough to hold fragment reassembly
-			if ( (unsigned)buf.cursize > buf.maxsize ) {
+			if ( (unsigned)buf.cursize > (unsigned)buf.maxsize ) {
 				Com_Printf("Com_EventLoop: oversize packet\n");
 				continue;
 			}
@@ -1078,9 +1077,8 @@ A way to force a bus error for development reasons
 =================
 */
 static void Com_Crash_f( void ) {
-	* ( int * ) 0 = 0x12345678;
+	* ( volatile int * ) 0 = 0x12345678;
 }
-
 
 #ifdef MEM_DEBUG
 	void SH_Register(void);
@@ -1165,8 +1163,14 @@ void Com_Init( char *commandLine ) {
 		com_dedicated = Cvar_Get ("dedicated", "2", CVAR_ROM);
 		Cvar_CheckRange( com_dedicated, 1, 2, qtrue );
 	#else
-		com_dedicated = Cvar_Get ("dedicated", "0", CVAR_LATCH);
-		Cvar_CheckRange( com_dedicated, 0, 2, qtrue );
+		//OJKFIXME: Temporarily disabled dedicated server when not using the dedicated server binary.
+		//			Issue is the server not having a renderer when not using ^^^^^
+		//				and crashing in SV_SpawnServer calling re.RegisterMedia_LevelLoadBegin
+		//			Until we fully remove the renderer from the server, the client executable
+		//				will not have dedicated support capabilities.
+		//			Use the dedicated server package.
+		com_dedicated = Cvar_Get ("_dedicated", "0", CVAR_ROM|CVAR_INIT|CVAR_PROTECTED);
+	//	Cvar_CheckRange( com_dedicated, 0, 2, qtrue );
 	#endif
 		// allocate the stack based hunk allocator
 		Com_InitHunkMemory();
@@ -1231,7 +1235,7 @@ void Com_Init( char *commandLine ) {
 		Cvar_Get ("RMG_course", "standard", CVAR_SYSTEMINFO );
 		Cvar_Get ("RMG_distancecull", "5000", CVAR_CHEAT );
 
-		com_introPlayed = Cvar_Get( "com_introplayed", "0", CVAR_ARCHIVE);
+		com_bootlogo = Cvar_Get( "com_bootlogo", "1", CVAR_ARCHIVE);
 
 	#if defined(_WIN32) && defined(_DEBUG)
 		com_noErrorInterrupt = Cvar_Get( "com_noErrorInterrupt", "0", 0 );
@@ -1283,14 +1287,10 @@ void Com_Init( char *commandLine ) {
 			// if the user didn't give any commands, run default action
 			if ( !com_dedicated->integer ) 
 			{
-#ifndef _DEBUG
-				Cbuf_AddText ("cinematic openinglogos.roq\n");
-#endif
-				// intro.roq is iD's.
-//				if( !com_introPlayed->integer ) {
-//					Cvar_Set( com_introPlayed->name, "1" );
-//					Cvar_Set( "nextmap", "cinematic intro.RoQ" );
-//				}
+				if ( com_bootlogo->integer )
+				{
+					Cbuf_AddText ("cinematic openinglogos.roq\n");
+				}
 			}
 		}
 
@@ -1528,7 +1528,7 @@ try
 	// but before the client tries to auto-connect
 	if ( com_dedicated->modified ) {
 		// get the latched value
-		Cvar_Get( "dedicated", "0", 0 );
+		Cvar_Get( "_dedicated", "0", 0 );
 		com_dedicated->modified = qfalse;
 		if ( !com_dedicated->integer ) {
 			CL_Init();
@@ -1606,6 +1606,8 @@ try
 
 }//try
 	catch (const char* reason) {
+		//OJKFIXME: Add delayed VM_Free again
+	//	VM_FreeRemaining();
 		Com_Printf (reason);
 		return;			// an ERR_DROP was thrown
 	}
@@ -1725,3 +1727,21 @@ CGenericParser2 *Com_ParseTextFile(const char *file, bool cleanFirst, bool write
 	return parse;
 }
 
+/*
+==================
+Com_RandomBytes
+
+fills string array with len radom bytes, peferably from the OS randomizer
+==================
+*/
+void Com_RandomBytes( byte *string, int len )
+{
+	int i;
+
+	if( Sys_RandomBytes( string, len ) )
+		return;
+
+	Com_Printf( "Com_RandomBytes: using weak randomization\n" );
+	for( i = 0; i < len; i++ )
+		string[i] = (unsigned char)( rand() % 255 );
+}

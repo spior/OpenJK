@@ -25,7 +25,7 @@ typedef struct {
 } qkey_t;
 
 #define	MAX_EDIT_LINE		256
-#define	COMMAND_HISTORY		32
+#define	COMMAND_HISTORY		64
 
 typedef struct {
 	int		cursor;
@@ -55,7 +55,7 @@ typedef struct
 {
 	word	upper;
 	word	lower;
-	char	*name;
+	const char	*name;
 	int		keynum;
 	bool	menukey;
 } keyname_t;
@@ -65,16 +65,14 @@ extern keyname_t	keynames[MAX_KEYS];
 
 void Field_Clear( field_t *edit );
 void Field_KeyDownEvent( field_t *edit, int key );
-void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor );
-void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor );
-
-extern	field_t	chatField;
+void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape );
+void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape );
 
 void Key_WriteBindings( fileHandle_t f );
 void Key_SetBinding( int keynum, const char *binding );
-char *Key_GetBinding( int keynum );
+const char *Key_GetBinding( int keynum );
 qboolean Key_IsDown( int keynum );
-int Key_StringToKeynum( char *str );
+int Key_StringToKeynum( const char *str );
 qboolean Key_GetOverstrikeMode( void );
 void Key_SetOverstrikeMode( qboolean state );
 void Key_ClearStates( void );

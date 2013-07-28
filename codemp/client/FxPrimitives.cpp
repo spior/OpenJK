@@ -18,11 +18,11 @@ extern int		drawnFx;
 //
 //--------------------------
 CEffect::CEffect(void) :
+	mFlags(0),
 	mMatImpactFX(MATIMPACTFX_NONE),
 	mMatImpactParm(-1),
-	mSoundVolume(-1),
 	mSoundRadius(-1),
-	mFlags(0)
+	mSoundVolume(-1)
 {
 	memset( &mRefEnt, 0, sizeof( mRefEnt ));
 }
@@ -415,10 +415,10 @@ void CParticle::UpdateSize(void)
 
 inline int VectorToInt(vec3_t vec)
 {
-	int			tmp, retval;
-
+	int retval = 0;
 	// FIXME: unix compatibility needed
 #ifdef _WIN32
+	int			tmp;
 	_asm
 	{
 		push	edx
@@ -2289,6 +2289,9 @@ void CFlash::Init( void )
 //----------------------------
 void CFlash::Draw( void )	
 {
+    // Interestingly, if znear is set > than this, then the flash
+    // doesn't appear at all.
+    const float FLASH_DISTANCE_FROM_VIEWER = 12.0f;
 	mRefEnt.reType = RT_SPRITE;
 
 	if ( mFlags & FX_LOCALIZED_FLASH )
@@ -2306,8 +2309,10 @@ void CFlash::Draw( void )
 	else
 	{
 		VectorCopy( theFxHelper.refdef->vieworg, mRefEnt.origin );
-		VectorMA( mRefEnt.origin, 12, theFxHelper.refdef->viewaxis[0], mRefEnt.origin );
-		mRefEnt.radius = fx_flashRadius->value; // 11.0f
+		VectorMA( mRefEnt.origin, FLASH_DISTANCE_FROM_VIEWER, theFxHelper.refdef->viewaxis[0], mRefEnt.origin );
+
+        // This is assuming that the screen is wider than it is tall.
+        mRefEnt.radius = FLASH_DISTANCE_FROM_VIEWER * tan (DEG2RAD (theFxHelper.refdef->fov_x * 0.5f));
 
 		theFxHelper.AddFxToScene( &mRefEnt );
 	}

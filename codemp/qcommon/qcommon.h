@@ -619,6 +619,8 @@ int		FS_FTell( fileHandle_t f );
 
 void	FS_Flush( fileHandle_t f );
 
+const char *FS_GetCurrentGameDir(bool emptybase=false);
+
 void 	QDECL FS_Printf( fileHandle_t f, const char *fmt, ... );
 // like fprintf
 
@@ -677,11 +679,12 @@ void		Com_EndRedirect( void );
 void 		QDECL Com_Printf( const char *fmt, ... );
 void 		QDECL Com_DPrintf( const char *fmt, ... );
 void		QDECL Com_OPrintf( const char *fmt, ...); // Outputs to the VC / Windows Debug window (only in debug compile)
-void 		QDECL Com_Error( int code, const char *fmt, ... );
+void 		QDECL Com_Error( int code, const char *fmt, ... ) __attribute__((noreturn));
 void 		Com_Quit_f( void );
 int			Com_EventLoop( void );
 int			Com_Milliseconds( void );	// will be journaled properly
 unsigned	Com_BlockChecksum( const void *buffer, int length );
+char		*Com_MD5File(const char *filename, int length, const char *prefix, int prefix_len);
 int      Com_HashKey(char *string, int maxlen);
 int			Com_Filter(char *filter, char *name, int casesensitive);
 int			Com_FilterPath(char *filter, char *name, int casesensitive);
@@ -881,10 +884,10 @@ void	CL_ForwardCommandToServer( const char *string );
 // things like godmode, noclip, etc, are commands directed to the server,
 // so when they are typed in at the console, they will need to be forwarded.
 
-void CL_ShutdownAll( qboolean shutdownRef );
+void CL_ShutdownAll( qboolean shutdownRef, qboolean delayFreeVM );
 // shutdown all the client stuff
 
-void CL_FlushMemory( void );
+void CL_FlushMemory( qboolean delayFlushVM );
 // dump all memory on an error
 
 void CL_StartHunkUsers( void );
@@ -978,7 +981,7 @@ void	*Sys_GetBotLibAPI( void *parms );
 
 char	*Sys_GetCurrentUser( void );
 
-void	QDECL Sys_Error( const char *error, ...);
+void	QDECL Sys_Error( const char *error, ...) __attribute__((noreturn));
 void	Sys_Quit (void);
 char	*Sys_GetClipboardData( void );	// note that this isn't journaled...
 
@@ -990,12 +993,9 @@ int		Sys_Milliseconds (bool baseTime = false);
 int		Sys_Milliseconds2(void);
 void 	Sys_SetEnv(const char *name, const char *value);
 
-#ifndef _WIN32
 extern "C" void	Sys_SnapVector( float *v );
 
-#else
-void	Sys_SnapVector( float *v );
-#endif
+qboolean Sys_RandomBytes( byte *string, int len );
 
 // the system console is shown when a dedicated server is running
 void	Sys_DisplaySystemConsole( qboolean show );
@@ -1022,9 +1022,16 @@ void	Sys_SetDefaultCDPath(const char *path);
 char	*Sys_DefaultCDPath(void);
 void	Sys_SetDefaultInstallPath(const char *path);
 char	*Sys_DefaultInstallPath(void);
-void     Sys_SetDefaultHomePath(const char *path);
+
+#ifdef MACOS_X
+char    *Sys_DefaultAppPath(void);
+#endif
+
 char	*Sys_DefaultHomePath(void);
-char	*Sys_DefaultBasePath(void);
+const char *Sys_Dirname( char *path );
+const char *Sys_Basename( char *path );
+
+bool Sys_PathCmp( const char *path1, const char *path2 );
 
 char **Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **fileList );

@@ -1,6 +1,3 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 #include "tr_local.h"
 
 #include "ghoul2/G2.h"
@@ -11,7 +8,9 @@
 #include "tr_lightmanager.h"
 #endif
 
+#ifdef _MSC_VER
 #pragma warning (disable: 4512)	//default assignment operator could not be gened
+#endif
 #include "qcommon/disablewarnings.h"
 
 static	int			r_firstSceneDrawSurf;
@@ -129,7 +128,7 @@ void RE_AddPolyToScene( qhandle_t hShader, int numVerts, const polyVert_t *verts
 	}
 
 	for ( j = 0; j < numPolys; j++ ) {
-		if ( r_numpolyverts + numVerts > max_polyverts || r_numpolys >= max_polys ) {
+		if ( r_numpolyverts + numVerts >= max_polyverts || r_numpolys >= max_polys ) {
       /*
       NOTE TTimo this was initially a PRINT_WARNING
       but it happens a lot with high fighting scenes and particles
@@ -241,10 +240,6 @@ void RE_AddRefEntityToScene( const refEntity_t *ent ) {
 
 		if (!ghoul2[0].mModel)
 		{
-#ifdef _DEBUG
-			CGhoul2Info &g2 = ghoul2[0];
-#endif
-			//DebugBreak();
 			Com_Printf("Your ghoul2 instance has no model!\n");
 		}
 	}

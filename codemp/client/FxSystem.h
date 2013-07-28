@@ -11,7 +11,6 @@ extern cvar_t	*fx_freeze;
 
 extern cvar_t	*fx_countScale;
 extern cvar_t	*fx_nearCull;
-extern cvar_t	*fx_flashRadius;
 
 inline void Vector2Clear(vec2_t a)
 {
@@ -115,7 +114,7 @@ public:
 			max = vec3_origin;
 		}
 
-		memset(td, sizeof(*td), 0);
+		memset(td, 0, sizeof(*td));
 		VectorCopy(start, td->mStart);
 		VectorCopy(min, td->mMins);
 		VectorCopy(max, td->mMaxs);
@@ -142,7 +141,7 @@ public:
 			max = vec3_origin;
 		}
 
-		memset(td, sizeof(*td), 0);
+		memset(td, 0, sizeof(*td));
 		VectorCopy(start, td->mStart);
 		VectorCopy(min, td->mMins);
 		VectorCopy(max, td->mMaxs);

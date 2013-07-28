@@ -1,6 +1,3 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 #include "tr_local.h"
 
 
@@ -137,6 +134,7 @@ void *R_GetCommandBuffer( int bytes ) {
 	renderCommandList_t	*cmdList;
 
 	cmdList = &backEndData->commands;
+	bytes = PAD(bytes, sizeof (void *));
 
 	assert(cmdList); // bk001205
 

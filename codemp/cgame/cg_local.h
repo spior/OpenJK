@@ -3,7 +3,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "qcommon/q_shared.h"
-#include "renderer/tr_types.h"
+#include "rd-common/tr_types.h"
 #include "game/bg_public.h"
 #include "cg_public.h"
 
@@ -1037,7 +1037,7 @@ extern cgscreffects_t cgScreenEffects;
 void CGCam_Shake( float intensity, int duration );
 void CGCam_SetMusicMult( float multiplier, int duration );
 
-typedef enum 
+enum 
 {
 	CHUNK_METAL1 = 0,
 	CHUNK_METAL2,

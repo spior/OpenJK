@@ -1,7 +1,7 @@
 #pragma once
 
 #include "qcommon/qfiles.h"
-#include "renderer/tr_public.h"
+#include "rd-common/tr_public.h"
 
 #ifdef _WIN32
 	#include "qgl.h"
@@ -14,16 +14,7 @@
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
 typedef unsigned int glIndex_t;
 
-#ifndef _WIN32
-	#include "qcommon/platform.h"
-#endif
-
-// fast float to int conversion
-#if id386 && !( (defined __linux__ || defined __FreeBSD__ || defined MACOS_X) && (defined __i386__ ) ) // rb010123
-	inline long myftol( float f );
-#else
-	#define	myftol(x) ((int)(x))
-#endif
+#define LL(x) x=LittleLong(x)
 
 //for 3d textures -rww
 #define GL_TEXTURE_3D                     0x806F
@@ -104,7 +95,7 @@ typedef struct {
 
 typedef struct image_s {
 	char		imgName[MAX_QPATH];		// game path, including extension
-	USHORT		width, height;	// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
+	word		width, height;	// after power of two and picmip but not including clamp to MAX_TEXTURE_SIZE
 	GLuint		texnum;					// gl texture binding
 
 	int			frameUsed;			// for texture usage in frame statistics
@@ -887,52 +878,6 @@ extern refimport_t ri;
 //====================================================
 
 
-// An offscreen buffer used for secondary rendering and render-to-texture support (RTT). - AReis
-class CPBUFFER
-{
-private:
-#ifdef _WIN32
-	// Pixel Buffer Rendering and Device Contexts.
-	HGLRC m_hRC;
-	HDC m_hDC;
-
-	// The render and device contexts for the previous render target.
-	HGLRC m_hOldRC;
-	HDC m_hOldDC;
-
-	// Buffer handle.
-	HPBUFFERARB m_hBuffer;
-#endif
-	// Buffer Dimensions.
-	int m_iWidth, m_iHeight;
-
-	// Color, depth, and stencil bits for this buffer.
-	int m_iColorBits, m_iDepthBits, m_iStencilBits;
-
-public:
-	// Texture used for displaying the pbuffer.
-	GLuint m_uiPBufferTexture;
-
-	// Constructor.
-	CPBUFFER() {}
-
-	// Destructor.
-	~CPBUFFER() {}
-
-	// Allocate and create a new PBuffer.
-	bool Create( int iWidth, int iHeight, int iColorBits, int iDepthBits, int iStencilBits );
-
-	// Destroy and deallocate a PBuffer.
-	void Destroy();
-
-	// Make this PBuffer the current render device.
-	bool Begin();
-
-	// Restore the previous render device.
-	bool End();
-};
-
-
 #define	MAX_DRAWIMAGES			2048
 #define	MAX_LIGHTMAPS			256
 #define	MAX_SKINS				1024
@@ -1236,6 +1181,8 @@ extern cvar_t	*r_windPointY;
 
 extern cvar_t	*r_mode;				// video mode
 extern cvar_t	*r_fullscreen;
+extern cvar_t	*r_noborder;			// disable border in windowed mode
+extern cvar_t	*r_centerWindow;		// override vid_x/ypos and center the window
 extern cvar_t	*r_gamma;
 extern cvar_t	*r_displayRefresh;		// optional display refresh option
 extern cvar_t	*r_ignorehwgamma;		// overrides hardware gamma capabilities
@@ -1319,9 +1266,6 @@ extern	cvar_t	*r_noServerGhoul2;
 Ghoul2 Insert End
 */
 //====================================================================
-
-float R_NoiseGet4f( float x, float y, float z, float t );
-void  R_NoiseInit( void );
 
 void R_SwapBuffers( int );
 
@@ -1442,8 +1386,6 @@ qboolean	R_GetEntityToken( char *buffer, int size );
 model_t		*R_AllocModel( void );
 
 void    	R_Init( void );
-
-void R_LoadImage( const char *name, byte **pic, int *width, int *height, GLenum *format );
 
 image_t		*R_FindImageFile( const char *name, qboolean mipmap, qboolean allowPicmip, qboolean allowTC, int glWrapClampMode );
 
@@ -1720,7 +1662,9 @@ void R_AddAnimSurfaces( trRefEntity_t *ent );
 /*
 Ghoul2 Insert Start
 */
+#ifdef _MSC_VER
 #pragma warning (disable: 4512)	//default assignment operator could not be gened
+#endif
 class CRenderableSurface
 {
 public:
@@ -1966,10 +1910,7 @@ void RE_RotatePic2 ( float x, float y, float w, float h,
 					  float s1, float t1, float s2, float t2,float a, qhandle_t hShader );
 void RE_BeginFrame( stereoFrame_t stereoFrame );
 void RE_EndFrame( int *frontEndMsec, int *backEndMsec );
-void RE_SaveJPG(char * filename, int quality, int image_width, int image_height, byte *image_buffer, int padding);
-size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality, int image_width, int image_height, byte *image_buffer, int padding);
 void RE_TakeVideoFrame( int width, int height, byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
-int RE_SavePNG( char *filename, byte *buf, size_t width, size_t height, int byteDepth );
 
 /*
 Ghoul2 Insert Start

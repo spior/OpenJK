@@ -4,10 +4,9 @@
 // tr_init.c -- functions that are not called every frame
 
 #include "tr_local.h"
-#include "tr_font.h"
+#include "../rd-common/tr_common.h"
 #include "qcommon/MiniHeap.h"
 #include "G2_local.h"
-#include "png/rpng.h"
 
 
 //#ifdef __USEA3D
@@ -134,6 +133,8 @@ cvar_t	*r_subdivisions;
 cvar_t	*r_lodCurveError;
 
 cvar_t	*r_fullscreen = 0;
+cvar_t	*r_noborder;
+cvar_t	*r_centerWindow;
 
 cvar_t	*r_customwidth;
 cvar_t	*r_customheight;
@@ -284,11 +285,7 @@ void R_Register( void )
 	r_ext_gamma_control					= ri.Cvar_Get( "r_ext_gamma_control",				"1",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_ext_multitexture					= ri.Cvar_Get( "r_ext_multitexture",				"1",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_ext_compiled_vertex_array			= ri.Cvar_Get( "r_ext_compiled_vertex_array",		"1",						CVAR_ARCHIVE|CVAR_LATCH );
-#ifdef __linux__ // broken on linux
-	r_ext_texture_env_add				= ri.Cvar_Get( "r_ext_texture_env_add",				"0",						CVAR_ARCHIVE|CVAR_LATCH );
-#else
 	r_ext_texture_env_add				= ri.Cvar_Get( "r_ext_texture_env_add",				"1",						CVAR_ARCHIVE|CVAR_LATCH );
-#endif
 	r_ext_texture_filter_anisotropic	= ri.Cvar_Get( "r_ext_texture_filter_anisotropic",	"16",						CVAR_ARCHIVE );
 	r_DynamicGlow						= ri.Cvar_Get( "r_DynamicGlow",						"0",						CVAR_ARCHIVE );
 	r_DynamicGlowPasses					= ri.Cvar_Get( "r_DynamicGlowPasses",				"5",						CVAR_CHEAT );
@@ -305,16 +302,14 @@ void R_Register( void )
 	r_texturebitslm						= ri.Cvar_Get( "r_texturebitslm",					"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_colorbits							= ri.Cvar_Get( "r_colorbits",						"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_stereo							= ri.Cvar_Get( "r_stereo",							"0",						CVAR_ARCHIVE|CVAR_LATCH );
-#ifdef __linux__
-	r_stencilbits						= ri.Cvar_Get( "r_stencilbits",						"0",						CVAR_ARCHIVE|CVAR_LATCH );
-#else
 	r_stencilbits						= ri.Cvar_Get( "r_stencilbits",						"8",						CVAR_ARCHIVE|CVAR_LATCH );
-#endif
 	r_depthbits							= ri.Cvar_Get( "r_depthbits",						"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_overBrightBits					= ri.Cvar_Get( "r_overBrightBits",					"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_ignorehwgamma						= ri.Cvar_Get( "r_ignorehwgamma",					"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_mode								= ri.Cvar_Get( "r_mode",							"4",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_fullscreen						= ri.Cvar_Get( "r_fullscreen",						"1",						CVAR_ARCHIVE|CVAR_LATCH );
+	r_noborder							= ri.Cvar_Get( "r_noborder",						"0",						CVAR_ARCHIVE|CVAR_LATCH );
+	r_centerWindow						= ri.Cvar_Get( "r_centerWindow",					"0",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_customwidth						= ri.Cvar_Get( "r_customwidth",						"1600",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_customheight						= ri.Cvar_Get( "r_customheight",					"1024",						CVAR_ARCHIVE|CVAR_LATCH );
 	r_simpleMipMaps						= ri.Cvar_Get( "r_simpleMipMaps",					"1",						CVAR_ARCHIVE|CVAR_LATCH );
@@ -343,11 +338,7 @@ void R_Register( void )
 	r_textureMode						= ri.Cvar_Get( "r_textureMode",						"GL_LINEAR_MIPMAP_NEAREST",	CVAR_ARCHIVE );
 	r_swapInterval						= ri.Cvar_Get( "r_swapInterval",					"0",						CVAR_ARCHIVE );
 	r_markcount							= ri.Cvar_Get( "r_markcount",						"100",						CVAR_ARCHIVE );
-#ifdef __MACOS__
-	r_gamma								= ri.Cvar_Get( "r_gamma",							"1.2",						CVAR_ARCHIVE );
-#else
 	r_gamma								= ri.Cvar_Get( "r_gamma",							"1",						CVAR_ARCHIVE );
-#endif
 	r_facePlaneCull						= ri.Cvar_Get( "r_facePlaneCull",					"1",						CVAR_ARCHIVE );
 	r_cullRoofFaces						= ri.Cvar_Get( "r_cullRoofFaces",					"0",						CVAR_CHEAT ); //attempted smart method of culling out upwards facing surfaces on roofs for automap shots -rww
 	r_roofCullCeilDist					= ri.Cvar_Get( "r_roofCullCeilDist",				"256",						CVAR_CHEAT ); //attempted smart method of culling out upwards facing surfaces on roofs for automap shots -rww

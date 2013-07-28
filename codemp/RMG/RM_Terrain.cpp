@@ -1,16 +1,18 @@
 //Anything above this #include will be ignored by the compiler
 #include "qcommon/exe_headers.h"
 #include "qcommon/cm_local.h"
-#include "renderer/tr_types.h"
+#include "rd-common/tr_types.h"
 #include "client/cl_cgameapi.h"
 #include "RM_Headers.h"
 
+#ifdef _MSC_VER
 #pragma optimize("", off)
 
 // The above optmization triggers this warning:
 // "/GS can not protect parameters and local variables from local buffer overrun because optimizations are disabled in function"
 // We don't give a rats ass.
 #pragma warning(disable: 4748)
+#endif
 
 static CRMLandScape		*rm_landscape;
 static CCMLandScape		*origin_land;
@@ -275,8 +277,8 @@ void CRMLandScape::CreateRandomDensityMap(byte *density, int width, int height, 
 void CRMLandScape::LoadDensityMap(const char *td)
 {
 	char		densityMap[MAX_QPATH];
-	byte		*imageData;
 #ifndef DEDICATED
+	byte		*imageData;
 	int			iWidth, iHeight, seed;
 	char 		*ptr;
 #endif
@@ -290,9 +292,7 @@ void CRMLandScape::LoadDensityMap(const char *td)
 	if(strlen(densityMap))
 	{
 		Com_DPrintf("CG_Terrain: Loading density map %s.....\n", densityMap);
-#ifdef DEDICATED
-		imageData = NULL;
-#else
+#ifndef DEDICATED
 		re.LoadDataImage(densityMap, &imageData, &iWidth, &iHeight);
 		if(imageData)
 		{
@@ -420,7 +420,7 @@ void CRMLandScape::Sprinkle(CCMPatch *patch, CCGHeightDetails *hd, int level)
 			}*/
 			// Make sure there is no architecture around - doesn't work for ents though =(
 
-			memset(td, sizeof(*td), 0);
+			memset( td, 0, sizeof( *td ) );
 			VectorCopy(origin, td->mStart);
 			VectorCopy(bounds[0], td->mMins);
 			VectorCopy(bounds[1], td->mMaxs);
@@ -515,6 +515,8 @@ void RM_ShutdownTerrain(void)
 
 // end
 
+#ifdef _MSC_VER
 #pragma warning(default: 4748)
 
 #pragma optimize("", on)
+#endif

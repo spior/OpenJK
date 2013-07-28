@@ -1,6 +1,3 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 // tr_models.c -- model loading and caching
 
 #include "tr_local.h"
@@ -8,11 +5,15 @@
 
 #include "qcommon/disablewarnings.h"
 
+#ifdef _MSC_VER
 #pragma warning (push, 3)	//go back down to 3 for the stl include
+#endif
 #include "qcommon/sstring.h"	// #include <string>
 #include <vector>
 #include <map>
+#ifdef _MSC_VER
 #pragma warning (pop)
+#endif
 
 using namespace std;
 
@@ -348,11 +349,8 @@ qboolean RE_RegisterModels_LevelLoadEnd(qboolean bDeleteEverythingNotUsedThisLev
 		int iLoadedModelBytes	=	GetModelDataAllocSize();
 		const int iMaxModelBytes=	r_modelpoolmegs->integer * 1024 * 1024;
 
-		qboolean bEraseOccured = qfalse;
-		for (CachedModels_t::iterator itModel = CachedModels->begin(); itModel != CachedModels->end() && ( bDeleteEverythingNotUsedThisLevel || iLoadedModelBytes > iMaxModelBytes ); bEraseOccured?itModel:++itModel)
-		{			
-			bEraseOccured = qfalse;
-
+		for (CachedModels_t::iterator itModel = CachedModels->begin(); itModel != CachedModels->end() && ( bDeleteEverythingNotUsedThisLevel || iLoadedModelBytes > iMaxModelBytes ); )
+		{
 			CachedEndianedModelBinary_t &CachedModel = (*itModel).second;
 
 			qboolean bDeleteThis = qfalse;
@@ -370,32 +368,25 @@ qboolean RE_RegisterModels_LevelLoadEnd(qboolean bDeleteEverythingNotUsedThisLev
 			//
 			if (bDeleteThis)
 			{
-				LPCSTR psModelName = (*itModel).first.c_str();
+				const char *psModelName = (*itModel).first.c_str();
 				ri.Printf( PRINT_DEVELOPER, S_COLOR_RED "Dumping \"%s\"", psModelName);
 
 	#ifdef _DEBUG
 				ri.Printf( PRINT_DEVELOPER, S_COLOR_RED ", used on lvl %d\n",CachedModel.iLastLevelUsedOn);
-	#endif				
+	#endif
 
 				if (CachedModel.pModelDiskImage) {
 					Z_Free(CachedModel.pModelDiskImage);	
 					//CachedModel.pModelDiskImage = NULL;	// REM for reference, erase() call below negates the need for it.
 					bAtLeastoneModelFreed = qtrue;
 				}
-#ifdef _WIN32
-				itModel = CachedModels->erase(itModel);
-				bEraseOccured = qtrue;
-#else
-				// Both MS and Dinkumware got the map::erase wrong
-				// The STL has the return type as a void
-				CachedModels_t::iterator itTemp;
-				itTemp = itModel;
-				itModel++;
-				CachedModels->erase(itTemp);
-				
-#endif
+				CachedModels->erase(itModel++);
 
 				iLoadedModelBytes = GetModelDataAllocSize();				
+			}
+			else
+			{
+				++itModel;
 			}
 		}
 	}
@@ -419,12 +410,12 @@ static void RE_RegisterModels_DumpNonPure(void)
 	if(!CachedModels) {
 		return;
 	}
-	qboolean bEraseOccured = qfalse;
-	for (CachedModels_t::iterator itModel = CachedModels->begin(); itModel != CachedModels->end(); bEraseOccured?itModel:++itModel)
-	{			
-		bEraseOccured = qfalse;
 
-		LPCSTR						psModelName	 = (*itModel).first.c_str();
+	for (CachedModels_t::iterator itModel = CachedModels->begin(); itModel != CachedModels->end(); /* empty */)
+	{			
+		qboolean bEraseOccured = qfalse;
+
+		const char *psModelName	 = (*itModel).first.c_str();
 		CachedEndianedModelBinary_t &CachedModel = (*itModel).second;
 
 		int iCheckSum = -1;
@@ -442,19 +433,14 @@ static void RE_RegisterModels_DumpNonPure(void)
 					Z_Free(CachedModel.pModelDiskImage);	
 					//CachedModel.pModelDiskImage = NULL;	// REM for reference, erase() call below negates the need for it.
 				}
-#ifdef _WIN32
-				itModel = CachedModels->erase(itModel);
+				CachedModels->erase(itModel++);
 				bEraseOccured = qtrue;
-#else
-				// Both MS and Dinkumware got the map::erase wrong
-				// The STL has the return type as a void
-				CachedModels_t::iterator itTemp;
-				itTemp = itModel;
-				itModel++;
-				CachedModels->erase(itTemp);
-
-#endif
 			}
+		}
+
+		if ( !bEraseOccured )
+		{
+			++itModel;
 		}
 	}
 
@@ -496,7 +482,6 @@ static void RE_RegisterModels_DeleteAll(void)
 		return;	//argh!
 	}
 
-#ifdef _WIN32
 	for (CachedModels_t::iterator itModel = CachedModels->begin(); itModel != CachedModels->end(); )
 	{
 		CachedEndianedModelBinary_t &CachedModel = (*itModel).second;
@@ -505,11 +490,8 @@ static void RE_RegisterModels_DeleteAll(void)
 			Z_Free(CachedModel.pModelDiskImage);					
 		}
 
-		itModel = CachedModels->erase(itModel);			
+		CachedModels->erase(itModel++);
 	}
-#else
-	CachedModels->erase(CachedModels->begin(),CachedModels->end());
-#endif
 }
 
 
@@ -678,7 +660,7 @@ qboolean ServerLoadMDXA( model_t *mod, void *buffer, const char *mod_name, qbool
 	int					version;
 	int					size;
 
-#ifndef _M_IX86
+#if 0 //#ifndef _M_IX86
 	int					j, k, i;
 	int					frameSize;
 	mdxaFrame_t			*cframe;
@@ -694,8 +676,8 @@ qboolean ServerLoadMDXA( model_t *mod, void *buffer, const char *mod_name, qbool
 
 	if (!bAlreadyCached)
 	{
-		version = LittleLong(version);
-		size	= LittleLong(size);
+		LL(version);
+		LL(size);
 	}
 	
 	if (version != MDXA_VERSION) {
@@ -740,7 +722,7 @@ qboolean ServerLoadMDXA( model_t *mod, void *buffer, const char *mod_name, qbool
 		return qtrue;	// All done, stop here, do not LittleLong() etc. Do not pass go...
 	}
 
-#ifndef _M_IX86
+#if 0 //#ifndef _M_IX86
 
 	//
 	// optimisation, we don't bother doing this for standard intel case since our data's already in that format...
@@ -795,10 +777,10 @@ qboolean ServerLoadMDXM( model_t *mod, void *buffer, const char *mod_name, qbool
 	mdxmSurface_t		*surf;
 	int					version;
 	int					size;
-	shader_t			*sh;
+	//shader_t			*sh;
 	mdxmSurfHierarchy_t	*surfInfo;
 
-#ifndef _M_IX86
+#if 0 //#ifndef _M_IX86
 	int					k;
 	int					frameSize;
 	mdxmTag_t			*tag;
@@ -817,8 +799,8 @@ qboolean ServerLoadMDXM( model_t *mod, void *buffer, const char *mod_name, qbool
 
 	if (!bAlreadyCached)
 	{
-		version = LittleLong(version);
-		size	= LittleLong(size);
+		LL(version);
+		LL(size);
 	}
 
 	if (version != MDXM_VERSION) {
@@ -882,7 +864,7 @@ qboolean ServerLoadMDXM( model_t *mod, void *buffer, const char *mod_name, qbool
 		}
 
 		// We will not be using shaders on the server.
-		sh = 0;
+		//sh = 0;
 		// insert it in the surface list
 		
 		surfInfo->shaderIndex = 0;
@@ -890,7 +872,7 @@ qboolean ServerLoadMDXM( model_t *mod, void *buffer, const char *mod_name, qbool
 		RE_RegisterModels_StoreShaderRequest(mod_name, &surfInfo->shader[0], &surfInfo->shaderIndex);
 
 		// find the next surface
-		surfInfo = (mdxmSurfHierarchy_t *)( (byte *)surfInfo + (int)( &((mdxmSurfHierarchy_t *)0)->childIndexes[ surfInfo->numChildren ] ));
+		surfInfo = (mdxmSurfHierarchy_t *)( (byte *)surfInfo + (intptr_t)( &((mdxmSurfHierarchy_t *)0)->childIndexes[ surfInfo->numChildren ] ));
   	}
 	
 	// swap all the LOD's	(we need to do the middle part of this even for intel, because of shader reg and err-check)
@@ -927,7 +909,7 @@ qboolean ServerLoadMDXM( model_t *mod, void *buffer, const char *mod_name, qbool
 			surf->ident = SF_MDX;
 
 			// register the shaders
-#ifndef _M_IX86
+#if 0 //#ifndef _M_IX86
 //
 // optimisation, we don't bother doing this for standard intel case since our data's already in that format...
 //
@@ -1084,7 +1066,7 @@ Ghoul2 Insert End
 		ident = *(unsigned *)buf;
 		if (!bAlreadyCached)
 		{
-			ident = LittleLong(ident);
+			LL(ident);
 		}
 
 		switch (ident)
@@ -1299,7 +1281,7 @@ Ghoul2 Insert End
 		ident = *(unsigned *)buf;
 		if (!bAlreadyCached)
 		{
-			ident = LittleLong(ident);
+			LL(ident);
 		}
 
 		switch (ident)
@@ -1417,7 +1399,7 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 	int					version;
 	int					size;
 
-#ifndef _M_IX86
+#if 0 //#ifndef _M_IX86
 	md3Frame_t			*frame;
 	md3Triangle_t		*tri;
 	md3St_t				*st;
@@ -1435,8 +1417,8 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 
 	if (!bAlreadyCached)
 	{
-		version = LittleLong(version);
-		size	= LittleLong(size);
+		LL(version);
+		LL(size);
 	}
 	
 	if (version != MD3_VERSION) {
@@ -1487,7 +1469,7 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 		return qtrue;	// All done. Stop, go no further, do not pass Go...
 	}
 
-#ifndef _M_IX86
+#if 0 //#ifndef _M_IX86
 	//
 	// optimisation, we don't bother doing this for standard intel case since our data's already in that format...
 	//
@@ -1565,7 +1547,7 @@ static qboolean R_LoadMD3 (model_t *mod, int lod, void *buffer, const char *mod_
 			RE_RegisterModels_StoreShaderRequest(mod_name, &shader->name[0], &shader->shaderIndex);
         }
 
-#ifndef _M_IX86
+#if 0 //#ifndef _M_IX86
 //
 // optimisation, we don't bother doing this for standard intel case since our data's already in that format...
 //

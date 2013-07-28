@@ -123,7 +123,6 @@ static void C_Trace(void);
 static void C_G2Trace(void);
 static void C_G2Mark(void);
 static int	CG_RagCallback(int callType);
-static void C_GetBoltPos(void);
 static void C_ImpactMark(void);
 
 extern autoMapInput_t cg_autoMapInput; //cg_view.c
@@ -537,7 +536,7 @@ void CG_UpdateCvars( void ) {
 		if ( cv->vmCvar ) {
 			int modCount = cv->vmCvar->modificationCount;
 			cgi.Cvar_Update( cv->vmCvar );
-			if ( cv->vmCvar->modificationCount > modCount ) {
+			if ( cv->vmCvar->modificationCount != modCount ) {
 				if ( cv->update )
 					cv->update();
 			}
@@ -1754,7 +1753,7 @@ Ghoul2 Insert End
 
 const char *CG_GetStringEdString(char *refSection, char *refName)
 {
-	static char text[2][1024]={0};	//just incase it's nested
+	static char text[2][1024];	//just incase it's nested
 	static int		index = 0;
 
 	index ^= 1;
@@ -2434,6 +2433,7 @@ void CG_LoadMenus(const char *menuFile)
 	
 	p = buf;
 
+	COM_BeginParseSession ("CG_LoadMenus");
 	while ( 1 ) 
 	{
 		token = COM_ParseExt( &p, qtrue );

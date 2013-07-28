@@ -633,7 +633,7 @@ void Blocked_Mover( gentity_t *ent, gentity_t *other )
 	// remove anything other than a client -- no longer the case
 
 	// don't remove security keys or goodie keys
-	if ( (other->s.eType == ET_ITEM) )
+	if ( other->s.eType == ET_ITEM)
 	{
 		// should we be doing anything special if a key blocks it... move it somehow..?
 	}
@@ -2516,6 +2516,11 @@ static void Q3_SetHealth( int entID, int data )
 		ent->health = 1;
 		if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR )
 		{ //this would be silly
+			return;
+		}
+
+		if ( ent->client->tempSpectate >= level.time )
+		{ //this would also be silly
 			return;
 		}
 

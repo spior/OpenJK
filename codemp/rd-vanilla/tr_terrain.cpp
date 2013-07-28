@@ -1,6 +1,3 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 // this include must remain at the top of every CPP file
 #include "tr_local.h"
 
@@ -511,7 +508,7 @@ void CTRLandScape::LoadTerrainDef(const char *td)
 	Com_Printf("R_Terrain: Loading and parsing terrainDef %s.....\n", td);
 
 	mWaterShader = NULL;
-	mFlatShader  = NULL;
+	mFlatShader  = NULL_HANDLE;
 
 	if(!Com_ParseTextFile(terrainDef, parse))
 	{
@@ -997,7 +994,7 @@ void R_AddTerrainSurfaces(void)
 
 void RE_InitRendererTerrain( const char *info )
 {
-	CTRLandScape	*ls;
+	//CTRLandScape	*ls;
 
 	if ( !info || !info[0] )
 	{
@@ -1008,7 +1005,7 @@ void RE_InitRendererTerrain( const char *info )
 	Com_Printf("R_Terrain: Creating RENDERER data.....\n");
 
 	// Create and register a new landscape structure
-	ls = new CTRLandScape(info);
+	/*ls = */new CTRLandScape(info);
 }
 
 void R_TerrainInit(void)

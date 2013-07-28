@@ -1,6 +1,3 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-
 #include "tr_local.h"
 #include "tr_WorldEffects.h"
 
@@ -13,7 +10,6 @@ void R_RMGInit(void)
 {
 	char			newSky[MAX_QPATH];
 	char			newFog[MAX_QPATH];
-	shader_t		*sky;
 	shader_t		*fog;
 	fog_t			*gfog;
 	mgrid_t			*grid;
@@ -23,7 +19,7 @@ void R_RMGInit(void)
 
 	ri.Cvar_VariableStringBuffer("RMG_sky", newSky, MAX_QPATH);
 	// Get sunlight - this should set up all the sunlight data
-	sky = R_FindShader( newSky, lightmapsNone, stylesDefault, qfalse );
+	R_FindShader( newSky, lightmapsNone, stylesDefault, qfalse );
 
 	// Remap sky
 	R_RemapShader("textures/tools/_sky", newSky, NULL);

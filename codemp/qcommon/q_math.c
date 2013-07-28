@@ -1148,15 +1148,18 @@ int Q_irand(int value1, int value2)
 
 float Q_powf ( float x, int y )
 {
-#if 0 //no need for another temporary value, we already have a stack variable to work with
 	float r = x;
 	for ( y--; y>0; y-- )
-		r = r * r;
+		r *= x;
 	return r;
+}
+
+qboolean Q_isnan (float f)
+{
+#ifdef _WIN32
+	return (qboolean)(_isnan (f) != 0);
 #else
-	for ( y--; y>0; y-- )
-		x *= x;
-	return x;
+	return (qboolean)(isnan (f) != 0);
 #endif
 }
 

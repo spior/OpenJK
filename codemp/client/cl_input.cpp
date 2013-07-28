@@ -785,12 +785,6 @@ void IN_CenterView (void) {
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.snap.ps.delta_angles[PITCH]);
 }
 
-#ifdef _XBOX
-void IN_VoiceToggleDown(void) { g_Voice.SetChannel( CHAN_ALL ); }
-void IN_VoiceToggleUp(void) { g_Voice.SetChannel( CHAN_TEAM ); }
-#endif
-
-
 //==========================================================================
 
 cvar_t	*cl_upspeed;
@@ -963,13 +957,18 @@ void CL_JoystickMove( usercmd_t *cmd ) {
 		return;
 	}
 
-	int		movespeed;
+#ifdef _WIN32
+	if( in_joystick->integer == 2 )
+	{
+		if(abs(cl.joystickAxis[AXIS_FORWARD]) >= 30) cmd->forwardmove = cl.joystickAxis[AXIS_FORWARD];
+		if(abs(cl.joystickAxis[AXIS_SIDE]) >= 30) cmd->rightmove = cl.joystickAxis[AXIS_SIDE];
+	}
+	else
+	{
+#endif
 	float	anglespeed;
 
-	if ( in_speed.active ^ cl_run->integer ) {
-		movespeed = 2;
-	} else {
-		movespeed = 1;
+	if ( !(in_speed.active ^ cl_run->integer) ) {
 		cmd->buttons |= BUTTON_WALKING;
 	}
 
@@ -1022,6 +1021,9 @@ void CL_JoystickMove( usercmd_t *cmd ) {
 	}
 
 	cmd->upmove = ClampChar( cmd->upmove + cl.joystickAxis[AXIS_UP] );
+#ifdef _WIN32
+	}
+#endif
 }
 
 /*
@@ -1322,7 +1324,6 @@ Create a new usercmd_t structure for this frame
 =================
 */
 void CL_CreateNewCommands( void ) {
-	usercmd_t	*cmd;
 	int			cmdNum;
 
 	// no need to create usercmds until we have a gamestate
@@ -1339,12 +1340,10 @@ void CL_CreateNewCommands( void ) {
 	}
 	old_com_frameTime = com_frameTime;
 
-
 	// generate a command for this frame
 	cl.cmdNumber++;
 	cmdNum = cl.cmdNumber & CMD_MASK;
 	cl.cmds[cmdNum] = CL_CreateCmd ();
-	cmd = &cl.cmds[cmdNum];
 }
 
 /*
