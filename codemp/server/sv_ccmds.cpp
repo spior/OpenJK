@@ -3,6 +3,7 @@
 
 #include "server.h"
 #include "qcommon/stringed_ingame.h"
+#include "server/sv_gameapi.h"
 #include "qcommon/game_version.h"
 
 /*
@@ -16,12 +17,6 @@ These commands can only be entered from stdin or by a remote operator datagram
 
 const char *SV_GetStringEdString(char *refSection, char *refName)
 {
-	/*
-	static char text[1024]={0};
-	trap_SP_GetStringTextString(va("%s_%s", refSection, refName), text, sizeof(text));
-	return text;
-	*/
-
 	//Well, it would've been lovely doing it the above way, but it would mean mixing
 	//languages for the client depending on what the server is. So we'll mark this as
 	//a stringed reference with @@@ and send the refname to the client, and when it goes
@@ -292,11 +287,11 @@ static void SV_MapRestart_f( void ) {
 	sv.state = SS_LOADING;
 	sv.restarting = qtrue;
 
-	SV_RestartGameProgs();
+	SV_RestartGame();
 
 	// run a few frames to allow everything to settle
 	for ( i = 0 ;i < 3 ; i++ ) {
-		VM_Call( gvm, GAME_RUN_FRAME, sv.time );
+		GVM_RunFrame( sv.time );
 		sv.time += 100;
 		svs.time += 100;
 	}
@@ -323,7 +318,7 @@ static void SV_MapRestart_f( void ) {
 		SV_AddServerCommand( client, "map_restart\n" );
 
 		// connect the client again, without the firstTime flag
-		denied = (char *)VM_ExplicitArgPtr( gvm, VM_Call( gvm, GAME_CLIENT_CONNECT, i, qfalse, isBot ) );
+		denied = GVM_ClientConnect( i, qfalse, isBot );
 		if ( denied ) {
 			// this generally shouldn't happen, because the client
 			// was connected before the level change
@@ -344,7 +339,7 @@ static void SV_MapRestart_f( void ) {
 	}	
 
 	// run another frame to allow things to look at all the players
-	VM_Call( gvm, GAME_RUN_FRAME, sv.time );
+	GVM_RunFrame( sv.time );
 	sv.time += 100;
 	svs.time += 100;
 }
@@ -868,6 +863,16 @@ static void SV_KillServer_f( void ) {
 
 /*
 ==================
+SV_CompleteMapName
+==================
+*/
+static void SV_CompleteMapName( char *args, int argNum ) {
+	if ( argNum == 2 )
+		Field_CompleteFilename( "maps", "bsp", qtrue, qfalse );
+}
+
+/*
+==================
 SV_AddOperatorCommands
 ==================
 */
@@ -892,10 +897,14 @@ void SV_AddOperatorCommands( void ) {
 	Cmd_AddCommand ("map_restart", SV_MapRestart_f);
 	Cmd_AddCommand ("sectorlist", SV_SectorList_f);
 	Cmd_AddCommand ("map", SV_Map_f);
+	Cmd_SetCommandCompletionFunc( "map", SV_CompleteMapName );
 	Cmd_AddCommand ("devmap", SV_Map_f);
+	Cmd_SetCommandCompletionFunc( "devmap", SV_CompleteMapName );
 //	Cmd_AddCommand ("devmapbsp", SV_Map_f);	// not used in MP codebase, no server BSP_cacheing
 	Cmd_AddCommand ("devmapmdl", SV_Map_f);
+	Cmd_SetCommandCompletionFunc( "devmapmdl", SV_CompleteMapName );
 	Cmd_AddCommand ("devmapall", SV_Map_f);
+	Cmd_SetCommandCompletionFunc( "devmapall", SV_CompleteMapName );
 	Cmd_AddCommand ("killserver", SV_KillServer_f);
 	Cmd_AddCommand ("svsay", SV_ConSay_f);
 

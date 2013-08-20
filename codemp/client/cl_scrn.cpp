@@ -4,6 +4,7 @@
 // cl_scrn.c -- master for refresh, status bar, console, chat, notify, etc
 
 #include "client.h"
+#include "cl_uiapi.h"
 
 extern console_t con;
 qboolean	scr_initialized;		// ready to draw
@@ -26,8 +27,8 @@ void SCR_DrawNamedPic( float x, float y, float width, float height, const char *
 
 	assert( width != 0 );
 
-	hShader = re.RegisterShader( picname );
-	re.DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
+	hShader = re->RegisterShader( picname );
+	re->DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
 
 
@@ -39,11 +40,11 @@ Coordinates are 640*480 virtual values
 =================
 */
 void SCR_FillRect( float x, float y, float width, float height, const float *color ) {
-	re.SetColor( color );
+	re->SetColor( color );
 
-	re.DrawStretchPic( x, y, width, height, 0, 0, 0, 0, cls.whiteShader );
+	re->DrawStretchPic( x, y, width, height, 0, 0, 0, 0, cls.whiteShader );
 
-	re.SetColor( NULL );
+	re->SetColor( NULL );
 }
 
 
@@ -55,7 +56,7 @@ Coordinates are 640*480 virtual values
 =================
 */
 void SCR_DrawPic( float x, float y, float width, float height, qhandle_t hShader ) {
-	re.DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
+	re->DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
 
 
@@ -94,7 +95,7 @@ static void SCR_DrawChar( int x, int y, float size, int ch ) {
 	size = 0.03125;
 	size2 = 0.0625;
 
-	re.DrawStretchPic( ax, ay, aw, ah,
+	re->DrawStretchPic( ax, ay, aw, ah,
 					   fcol, frow, 
 					   fcol + size, frow + size2, 
 					   cls.charSetShader );
@@ -127,14 +128,12 @@ void SCR_DrawSmallChar( int x, int y, int ch ) {
 	frow = row*0.0625;
 	fcol = col*0.0625;
 
-#ifdef _JK2
 	size = 0.03125;
-#else
-	size = 0.0625;
-#endif
+//	size = 0.0625;
+
 	size2 = 0.0625;
 
-	re.DrawStretchPic( x * con.xadjust, y * con.yadjust, 
+	re->DrawStretchPic( x * con.xadjust, y * con.yadjust, 
 						SMALLCHAR_WIDTH * con.xadjust, SMALLCHAR_HEIGHT * con.yadjust, 
 					   fcol, frow, 
 					   fcol + size, frow + size2, 
@@ -160,7 +159,7 @@ void SCR_DrawStringExt( int x, int y, float size, const char *string, float *set
 	// draw the drop shadow
 	color[0] = color[1] = color[2] = 0;
 	color[3] = setColor[3];
-	re.SetColor( color );
+	re->SetColor( color );
 	s = string;
 	xx = x;
 	while ( *s ) {
@@ -177,13 +176,13 @@ void SCR_DrawStringExt( int x, int y, float size, const char *string, float *set
 	// draw the colored text
 	s = string;
 	xx = x;
-	re.SetColor( setColor );
+	re->SetColor( setColor );
 	while ( *s ) {
 		if ( Q_IsColorString( s ) ) {
 			if ( !forceColor ) {
 				Com_Memcpy( color, g_color_table[ColorIndex(*(s+1))], sizeof( color ) );
 				color[3] = setColor[3];
-				re.SetColor( color );
+				re->SetColor( color );
 			}
 			if ( !noColorEscape ) {
 				s += 2;
@@ -194,7 +193,7 @@ void SCR_DrawStringExt( int x, int y, float size, const char *string, float *set
 		xx += size;
 		s++;
 	}
-	re.SetColor( NULL );
+	re->SetColor( NULL );
 }
 
 
@@ -229,13 +228,13 @@ void SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, 
 	// draw the colored text
 	s = string;
 	xx = x;
-	re.SetColor( setColor );
+	re->SetColor( setColor );
 	while ( *s ) {
 		if ( Q_IsColorString( s ) ) {
 			if ( !forceColor ) {
 				Com_Memcpy( color, g_color_table[ColorIndex(*(s+1))], sizeof( color ) );
 				color[3] = setColor[3];
-				re.SetColor( color );
+				re->SetColor( color );
 			}
 			if ( !noColorEscape ) {
 				s += 2;
@@ -246,7 +245,7 @@ void SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, 
 		xx += SMALLCHAR_WIDTH;
 		s++;
 	}
-	re.SetColor( NULL );
+	re->SetColor( NULL );
 }
 
 
@@ -348,10 +347,10 @@ void SCR_DrawDebugGraph (void)
 	w = 640;
 	x = 0;
 	y = 480;
-	re.SetColor( g_color_table[0] );
-	re.DrawStretchPic(x, y - cl_graphheight->integer, 
+	re->SetColor( g_color_table[0] );
+	re->DrawStretchPic(x, y - cl_graphheight->integer, 
 		w, cl_graphheight->integer, 0, 0, 0, 0, cls.whiteShader );
-	re.SetColor( NULL );
+	re->SetColor( NULL );
 
 	for (a=0 ; a<w ; a++)
 	{
@@ -362,7 +361,7 @@ void SCR_DrawDebugGraph (void)
 		if (v < 0)
 			v += cl_graphheight->integer * (1+(int)(-v / cl_graphheight->integer));
 		h = (int)v % cl_graphheight->integer;
-		re.DrawStretchPic( x+w-1-a, y - h, 1, h, 0, 0, 0, 0, cls.whiteShader );
+		re->DrawStretchPic( x+w-1-a, y - h, 1, h, 0, 0, 0, 0, cls.whiteShader );
 	}
 }
 
@@ -394,21 +393,21 @@ This will be called twice if rendering in stereo mode
 ==================
 */
 void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
-	re.BeginFrame( stereoFrame );
+	re->BeginFrame( stereoFrame );
 
-	qboolean uiFullscreen = (qboolean)(uivm && VM_Call( uivm, UI_IS_FULLSCREEN ));
+	qboolean uiFullscreen = (qboolean)(cls.uiStarted && UIVM_IsFullscreen());
 
 	// wide aspect ratio screens need to have the sides cleared
 	// unless they are displaying game renderings
 	if ( uiFullscreen || (cls.state != CA_ACTIVE && cls.state != CA_CINEMATIC) ) {
 		if ( cls.glconfig.vidWidth * 480 > cls.glconfig.vidHeight * 640 ) {
-			re.SetColor( g_color_table[0] );
-			re.DrawStretchPic( 0, 0, cls.glconfig.vidWidth, cls.glconfig.vidHeight, 0, 0, 0, 0, cls.whiteShader );
-			re.SetColor( NULL );
+			re->SetColor( g_color_table[0] );
+			re->DrawStretchPic( 0, 0, cls.glconfig.vidWidth, cls.glconfig.vidHeight, 0, 0, 0, 0, cls.whiteShader );
+			re->SetColor( NULL );
 		}
 	}
 
-	if ( !uivm ) {
+	if ( !cls.uiStarted ) {
 		Com_DPrintf("draw screen without UI loaded\n");
 		return;
 	}
@@ -417,8 +416,7 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 	// don't need to render anything under it
 	//actually, yes you do, unless you want clients to cycle out their reliable
 	//commands from sitting in the menu. -rww
-	if ( (uivm && !uiFullscreen) || (!(cls.framecount&7) && cls.state == CA_ACTIVE) ) {
-	//if ( !VM_Call( uivm, UI_IS_FULLSCREEN ) || (!(cls.framecount&7) && cls.state == CA_ACTIVE)) {
+	if ( (cls.uiStarted && !uiFullscreen) || (!(cls.framecount&7) && cls.state == CA_ACTIVE) ) {
 		switch( cls.state ) {
 		default:
 			Com_Error( ERR_FATAL, "SCR_DrawScreenField: bad cls.state" );
@@ -429,15 +427,15 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 		case CA_DISCONNECTED:
 			// force menu up
 			S_StopAllSounds();
-			VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
+			UIVM_SetActiveMenu( UIMENU_MAIN );
 			break;
 		case CA_CONNECTING:
 		case CA_CHALLENGING:
 		case CA_CONNECTED:
 			// connecting clients will only show the connection dialog
 			// refresh to update the time
-			VM_Call( uivm, UI_REFRESH, cls.realtime );
-			VM_Call( uivm, UI_DRAW_CONNECT_SCREEN, qfalse );
+			UIVM_Refresh( cls.realtime );
+			UIVM_DrawConnectScreen( qfalse );
 			break;
 		case CA_LOADING:
 		case CA_PRIMED:
@@ -447,8 +445,8 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 			// also draw the connection information, so it doesn't
 			// flash away too briefly on local or lan games
 			// refresh to update the time
-			VM_Call( uivm, UI_REFRESH, cls.realtime );
-			VM_Call( uivm, UI_DRAW_CONNECT_SCREEN, qtrue );
+			UIVM_Refresh( cls.realtime );
+			UIVM_DrawConnectScreen( qtrue );
 			break;
 		case CA_ACTIVE:
 			CL_CGameRendering( stereoFrame );
@@ -458,8 +456,8 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 	}
 
 	// the menu draws next
-	if ( Key_GetCatcher( ) & KEYCATCH_UI && uivm ) {
-		VM_Call( uivm, UI_REFRESH, cls.realtime );
+	if ( Key_GetCatcher( ) & KEYCATCH_UI && cls.uiStarted ) {
+		UIVM_Refresh( cls.realtime );
 	}
 
 	// console draws next
@@ -493,7 +491,7 @@ void SCR_UpdateScreen( void ) {
 
 	// If there is no VM, there are also no rendering commands issued. Stop the renderer in
 	// that case.
-	if( uivm || com_dedicated->integer )
+	if( cls.uiStarted || com_dedicated->integer )
 	{
 		// if running in stereo, we need to draw the frame twice
 		if ( cls.glconfig.stereoEnabled ) {
@@ -504,9 +502,9 @@ void SCR_UpdateScreen( void ) {
 		}
 
 		if ( com_speeds->integer ) {
-			re.EndFrame( &time_frontend, &time_backend );
+			re->EndFrame( &time_frontend, &time_backend );
 		} else {
-			re.EndFrame( NULL, NULL );
+			re->EndFrame( NULL, NULL );
 		}
 	}
 

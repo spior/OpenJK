@@ -1,7 +1,7 @@
 
 extern "C"
 {
-#include "../codeMP/cgame/cg_local.h"
+#include "../cgame/cg_local.h"
 }
 
 void MM_Init(void)

@@ -5,6 +5,7 @@ typedef struct cmd_function_s
 	struct cmd_function_s	*next;
 	char					*name;
 	xcommand_t				function;
+	completionFunc_t		complete;
 } cmd_function_t;
 
 
@@ -46,8 +47,21 @@ void	Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
 	cmd = (struct cmd_function_s *)S_Malloc (sizeof(cmd_function_t));
 	cmd->name = CopyString( cmd_name );
 	cmd->function = function;
+	cmd->complete = NULL;
 	cmd->next = cmd_functions;
 	cmd_functions = cmd;
+}
+
+/*
+============
+Cmd_SetCommandCompletionFunc
+============
+*/
+void Cmd_SetCommandCompletionFunc( const char *command, completionFunc_t complete ) {
+	for ( cmd_function_t *cmd=cmd_functions; cmd; cmd=cmd->next ) {
+		if ( !Q_stricmp( command, cmd->name ) )
+			cmd->complete = complete;
+	}
 }
 
 /*
@@ -92,6 +106,17 @@ void	Cmd_CommandCompletion( callbackFunc_t callback ) {
 	}
 }
 
+/*
+============
+Cmd_CompleteArgument
+============
+*/
+void Cmd_CompleteArgument( const char *command, char *args, int argNum ) {
+	for ( cmd_function_t *cmd=cmd_functions; cmd; cmd=cmd->next ) {
+		if ( !Q_stricmp( command, cmd->name ) && cmd->complete )
+			cmd->complete( args, argNum );
+	}
+}
 
 /*
 ============
@@ -136,6 +161,7 @@ void	Cmd_ExecuteString( const char *text ) {
 	}
 
 	// check client game commands
+	/*
 	if ( com_cl_running && com_cl_running->integer && CL_GameCommand() ) {
 		return;
 	}
@@ -149,6 +175,7 @@ void	Cmd_ExecuteString( const char *text ) {
 	if ( com_cl_running && com_cl_running->integer && UI_GameCommand() ) {
 		return;
 	}
+	*/
 
 	// send it as a server command if we are connected
 	// this will usually result in a chat message

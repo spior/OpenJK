@@ -639,7 +639,7 @@ void S_ReloadAllUsedSounds(void)
 		{
 			sfx_t *sfx = &s_knownSfx[i];
 
-			if (!sfx->bInMemory && !sfx->bDefaultSound && sfx->iLastLevelUsedOn == re.RegisterMedia_GetLevel()){
+			if (!sfx->bInMemory && !sfx->bDefaultSound && sfx->iLastLevelUsedOn == re->RegisterMedia_GetLevel()){
 				S_memoryLoad(sfx);
 			}
 		}
@@ -3113,9 +3113,6 @@ void UpdateSingleShotSounds()
 	ALint state;
 	ALint processed;
 	channel_t *ch;
-#ifdef _DEBUG
-	char szString[256];
-#endif
 
 	// Firstly, check if any single-shot sounds have completed, or if they need more data (for streaming Sources),
 	// and/or if any of the currently playing (non-Ambient) looping sounds need to be stopped
@@ -4533,7 +4530,7 @@ void S_RestartMusic( void )
 // to be honest, although the code still plays WAVs some of the file-check logic only works for MP3s, so if you ever want
 //	to use WAV music you'll have to do some tweaking below (but I've got other things to do so it'll have to wait - Ste)
 //
-void S_StartBackgroundTrack( const char *intro, const char *loop, int bCalledByCGameStart )
+void S_StartBackgroundTrack( const char *intro, const char *loop, qboolean bCalledByCGameStart )
 {
 	bMusic_IsDynamic = qfalse;
 
@@ -5171,7 +5168,7 @@ void S_DisplayFreeMemory()
 		{
 			sfx_t *sfx = &s_knownSfx[i];
 
-			if (sfx->iLastLevelUsedOn == re.RegisterMedia_GetLevel()){
+			if (sfx->iLastLevelUsedOn == re->RegisterMedia_GetLevel()){
 				iSoundDataSize += SND_MemUsed(sfx);
 			}
 		}
@@ -5183,7 +5180,7 @@ void S_DisplayFreeMemory()
 void SND_TouchSFX(sfx_t *sfx)
 {
 	sfx->iLastTimeUsed		= Com_Milliseconds()+1;
-	sfx->iLastLevelUsedOn	= re.RegisterMedia_GetLevel();
+	sfx->iLastLevelUsedOn	= re->RegisterMedia_GetLevel();
 }
 
 
@@ -5288,11 +5285,11 @@ qboolean SND_RegisterAudio_LevelLoadEnd(qboolean bDeleteEverythingNotUsedThisLev
 
 				if (bDeleteEverythingNotUsedThisLevel)
 				{
-					bDeleteThis = (sfx->iLastLevelUsedOn != re.RegisterMedia_GetLevel());
+					bDeleteThis = (sfx->iLastLevelUsedOn != re->RegisterMedia_GetLevel());
 				}
 				else
 				{
-					bDeleteThis = (sfx->iLastLevelUsedOn < re.RegisterMedia_GetLevel());
+					bDeleteThis = (sfx->iLastLevelUsedOn < re->RegisterMedia_GetLevel());
 				}
 
 				if (bDeleteThis)

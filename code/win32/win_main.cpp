@@ -51,8 +51,6 @@ This file is part of Jedi Academy.
 
 #define MEM_THRESHOLD 128*1024*1024
 
-static char		sys_cmdline[MAX_STRING_CHARS];
-
 void Sys_SetBinaryPath(const char *path);
 char *Sys_BinaryPath(void);
 
@@ -298,15 +296,103 @@ DIRECTORY SCANNING
 
 #define	MAX_FOUND_FILES	0x1000
 
-char **Sys_ListFiles( const char *directory, const char *extension, int *numfiles, qboolean wantsubs ) {
+void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, char **psList, int *numfiles ) {
+	char		search[MAX_OSPATH], newsubdirs[MAX_OSPATH];
+	char		filename[MAX_OSPATH];
+	intptr_t	findhandle;
+	struct _finddata_t findinfo;
+
+	if ( *numfiles >= MAX_FOUND_FILES - 1 ) {
+		return;
+	}
+
+	if (strlen(subdirs)) {
+		Com_sprintf( search, sizeof(search), "%s\\%s\\*", basedir, subdirs );
+	}
+	else {
+		Com_sprintf( search, sizeof(search), "%s\\*", basedir );
+	}
+
+	findhandle = _findfirst (search, &findinfo);
+	if (findhandle == -1) {
+		return;
+	}
+
+	do {
+		if (findinfo.attrib & _A_SUBDIR) {
+			if (Q_stricmp(findinfo.name, ".") && Q_stricmp(findinfo.name, "..")) {
+				if (strlen(subdirs)) {
+					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s\\%s", subdirs, findinfo.name);
+				}
+				else {
+					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s", findinfo.name);
+				}
+				Sys_ListFilteredFiles( basedir, newsubdirs, filter, psList, numfiles );
+			}
+		}
+		if ( *numfiles >= MAX_FOUND_FILES - 1 ) {
+			break;
+		}
+		Com_sprintf( filename, sizeof(filename), "%s\\%s", subdirs, findinfo.name );
+		if (!Com_FilterPath( filter, filename, qfalse ))
+			continue;
+		psList[ *numfiles ] = CopyString( filename );
+		(*numfiles)++;
+	} while ( _findnext (findhandle, &findinfo) != -1 );
+
+	_findclose (findhandle);
+}
+
+static qboolean strgtr(const char *s0, const char *s1) {
+	int l0, l1, i;
+
+	l0 = strlen(s0);
+	l1 = strlen(s1);
+
+	if (l1<l0) {
+		l0 = l1;
+	}
+
+	for(i=0;i<l0;i++) {
+		if (s1[i] > s0[i]) {
+			return qtrue;
+		}
+		if (s1[i] < s0[i]) {
+			return qfalse;
+		}
+	}
+	return qfalse;
+}
+
+char **Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs ) {
 	char		search[MAX_OSPATH];
 	int			nfiles;
 	char		**listCopy;
 	char		*list[MAX_FOUND_FILES];
 	struct _finddata_t findinfo;
-	int			findhandle;
+	intptr_t	findhandle;
 	int			flag;
 	int			i;
+
+	if (filter) {
+
+		nfiles = 0;
+		Sys_ListFilteredFiles( directory, "", filter, list, &nfiles );
+
+		list[ nfiles ] = 0;
+		*numfiles = nfiles;
+
+		if (!nfiles)
+			return NULL;
+
+		listCopy = (char **)Z_Malloc( ( nfiles + 1 ) * sizeof( *listCopy ), TAG_LISTFILES, qfalse );
+		for ( i = 0 ; i < nfiles ; i++ ) {
+			listCopy[i] = list[i];
+		}
+		listCopy[i] = NULL;
+
+		return listCopy;
+	}
 
 	if ( !extension) {
 		extension = "";
@@ -357,6 +443,18 @@ char **Sys_ListFiles( const char *directory, const char *extension, int *numfile
 		listCopy[i] = list[i];
 	}
 	listCopy[i] = NULL;
+
+	do {
+		flag = 0;
+		for(i=1; i<nfiles; i++) {
+			if (strgtr(listCopy[i-1], listCopy[i])) {
+				char *temp = listCopy[i];
+				listCopy[i] = listCopy[i-1];
+				listCopy[i-1] = temp;
+				flag = 1;
+			}
+		}
+	} while(flag);
 
 	return listCopy;
 }
@@ -427,48 +525,6 @@ void Sys_UnloadDll( void *dllHandle ) {
 	}
 }
 
-//make sure the dll can be opened by the file system, then write the
-//file back out again so it can be loaded is a library. If the read
-//fails then the dll is probably not in the pk3 and we are running
-//a pure server -rww
-bool Sys_UnpackDLL(const char *name)
-{
-	void *data;
-	fileHandle_t f;
-	int len = FS_ReadFile(name, &data);
-
-	if (len < 1)
-	{ //failed to read the file (out of the pk3 if pure)
-		return false;
-	}
-
-	if (FS_FileIsInPAK(name) == -1)
-	{ //alright, it isn't in a pk3 anyway, so we don't need to write it.
-		//this is allowable when running non-pure.
-		FS_FreeFile(data);
-		return true;
-	}
-
-	f = FS_FOpenFileWrite( name );
-	if ( !f )
-	{ //can't open for writing? Might be in use.
-		//This is possibly a malicious user attempt to circumvent dll
-		//replacement so we won't allow it.
-		FS_FreeFile(data);
-		return false;
-	}
-
-	if (FS_Write( data, len, f ) < len)
-	{ //Failed to write the full length. Full disk maybe?
-		FS_FreeFile(data);
-		return false;
-	}
-
-	FS_FCloseFile( f );
-	FS_FreeFile(data);
-
-	return true;
-}
 
 /*
 =================
@@ -598,34 +654,90 @@ Retrieve the DLL using fs_game
 =================
 */
 
-static HINSTANCE Sys_RetrieveDLL( const char *gamename, const char *debugdir )
+static HINSTANCE Sys_RetrieveDLL( const char *gamename )
 {
-	char	cwd[MAX_OSPATH];
-	char	name[MAX_OSPATH];
+	char *basepath = Cvar_VariableString( "fs_basepath" );
+	char *homepath = Cvar_VariableString( "fs_homepath" );
+	char *cdpath = Cvar_VariableString( "fs_cdpath" );
+	char *gamedir = Cvar_VariableString( "fs_game" );
 
-	HINSTANCE retVal;
-
-	cvar_t *moddir = Cvar_Get("fs_game", "", CVAR_INIT|CVAR_SERVERINFO);
-
-	// First search path: mod dir, debug/release folders
-	_getcwd(cwd, sizeof(cwd));
-	Com_sprintf(name, sizeof(name), "%s/%s/%s/%s", cwd, moddir->string, debugdir, gamename);
-	retVal = LoadLibrary(name);
+	// Try basepath/fs_game
+	char *fn = FS_BuildOSPath( basepath, gamedir, gamename );
+	HINSTANCE retVal = LoadLibrary( fn );
 	if(retVal)
 		goto successful;
 
-	// Second search path: mod dir
-	Com_sprintf(name, sizeof(name), "%s/%s/%s", cwd, moddir->string, gamename);
-	retVal = LoadLibrary(name);
+	if( homepath[0] ) {
+		// Try homepath/fs_game
+		fn = FS_BuildOSPath( homepath, gamedir, gamename );
+		retVal = LoadLibrary( fn );
+		if(retVal)
+			goto successful;
+	}
+
+	if( cdpath[0] ) {
+		// Try cdpath/fs_game
+		fn = FS_BuildOSPath( cdpath, gamedir, gamename );
+		retVal = LoadLibrary( fn );
+		if(retVal)
+			goto successful;
+	}
+
+	// Try base folder if mod is loaded but not found
+	if (gamedir[0] ) {
+		// Try basepath/base
+		fn = FS_BuildOSPath( basepath, "base", gamename );
+		retVal = LoadLibrary( fn );
+		if(retVal)
+			goto successful;
+
+		if( homepath[0] ) {
+			// Try homepath/base
+			fn = FS_BuildOSPath( homepath, "base", gamename );
+			retVal = LoadLibrary( fn );
+			if(retVal)
+				goto successful;
+		}
+
+		if( cdpath[0] ) {
+			// Try cdpath/fs_game
+			fn = FS_BuildOSPath( cdpath, "base", gamename );
+			retVal = LoadLibrary( fn );
+			if(retVal)
+				goto successful;
+		}
+	}
+
+	// Try basepath
+	fn = va( "%s/%s", basepath, gamename );
+	retVal = LoadLibrary( fn );
 	if(retVal)
 		goto successful;
 
-	// Third/last search path: gamedata folder
-	Com_sprintf(name, sizeof(name), "%s/%s", cwd, gamename);
-	retVal = LoadLibrary(name);
+	if( homepath[0] ) {
+		// Try homepath
+		fn = va( "%s/%s", homepath, gamename );
+		retVal = LoadLibrary( fn );
+		if(retVal)
+			goto successful;
+	}
+
+	if( cdpath[0] ) {
+		// Try cdpath/fs_game
+		fn = va( "%s/%s", cdpath, gamename );
+		retVal = LoadLibrary( fn );
+		if(retVal)
+			goto successful;
+	}
+
+	// Try exepath (cwd)
+	fn = NULL;
+	retVal = LoadLibrary( gamename );
+	if(retVal)
+		goto successful;
 
 successful:
-	Com_DPrintf("LoadLibrary (%s)\n", name);
+	Com_DPrintf("LoadLibrary (%s)\n", fn?fn:gamename);
 	return retVal;
 }
 
@@ -650,34 +762,10 @@ void *Sys_GetGameAPI (void *parms)
 		gamename = "jagame" ARCH_STRING DLL_EXT;
 	}
 
-#if id386
-#ifdef NDEBUG
-	const char *debugdir = "release";
-#elif MEM_DEBUG
-	const char *debugdir = "shdebug";
-#else
-	const char *debugdir = "debug";
-#endif	//NDEBUG
-#elif idx64
-#ifdef NDEBUG
-	const char *debugdir = "release64";
-#elif MEM_DEBUG
-	const char *debugdir = "shdebug64";
-#else
-	const char *debugdir = "debug64";
-#endif	//NDEBUG
-#elif defined _M_ALPHA
-#ifdef NDEBUG
-	const char *debugdir = "releaseaxp";
-#else
-	const char *debugdir = "debugaxp";
-#endif //NDEBUG
-#endif
-
 	if (game_library)
 		Com_Error (ERR_FATAL, "Sys_GetGameAPI without Sys_UnloadingGame");
 
-	game_library = Sys_RetrieveDLL(gamename, debugdir);
+	game_library = Sys_RetrieveDLL(gamename);
 	if(!game_library)
 	{
 		char *buf;

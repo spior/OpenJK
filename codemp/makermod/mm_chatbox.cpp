@@ -1,7 +1,7 @@
 
 extern "C"
 {
-#include "../codeMP/cgame/cg_local.h"
+#include "../cgame/cg_local.h"
 }
 
 typedef struct mmCBItem_s mmCBItem_t;
@@ -65,7 +65,7 @@ void MM_ChatBox_AddString(char *time, char *name, char *chatStr)
 		MM_ChatBox_AddString("", "", va("^%i%s", strrchr(colorBuf, '^') ? *(strrchr(colorBuf, '^')+1)-'0' : 7, text));
 		find->string[j+1] = 0;
 	}
-	find->time = trap_Milliseconds();
+	find->time = trap->Milliseconds();
 }
 
 void MM_ChatBox_DrawStrings(void)

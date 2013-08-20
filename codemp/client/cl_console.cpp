@@ -4,6 +4,7 @@
 // console.c
 
 #include "client.h"
+#include "cl_cgameapi.h"
 #include "qcommon/stringed_ingame.h"
 #include "qcommon/game_version.h"
 
@@ -32,8 +33,8 @@ void Con_ToggleConsole_f (void) {
 		return;
 	}
 
-	Field_Clear( &kg.g_consoleField );
-	kg.g_consoleField.widthInChars = g_console_field_width;
+	Field_Clear( &g_consoleField );
+	g_consoleField.widthInChars = g_console_field_width;
 
 	Con_ClearNotify ();
 	Key_SetCatcher( Key_GetCatcher( ) ^ KEYCATCH_CONSOLE );
@@ -73,13 +74,13 @@ Con_MessageMode3_f
 */
 void Con_MessageMode3_f (void)
 {		//target chat
-	if (!cgvm)
+	if (!cls.cgameStarted)
 	{
 		assert(!"null cgvm");
 		return;
 	}
 
-	chat_playerNum = VM_Call( cgvm, CG_CROSSHAIR_PLAYER );
+	chat_playerNum = CGVM_CrosshairPlayer();
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
 		return;
@@ -97,13 +98,13 @@ Con_MessageMode4_f
 */
 void Con_MessageMode4_f (void)
 {	//attacker
-	if (!cgvm)
+	if (!cls.cgameStarted)
 	{
 		assert(!"null cgvm");
 		return;
 	}
 
-	chat_playerNum = VM_Call( cgvm, CG_LAST_ATTACKER );
+	chat_playerNum = CGVM_LastAttacker();
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
 		return;
@@ -301,6 +302,16 @@ void Con_CheckResize (void)
 
 
 /*
+==================
+Cmd_CompleteTxtName
+==================
+*/
+void Cmd_CompleteTxtName( char *args, int argNum ) {
+	if ( argNum == 2 )
+		Field_CompleteFilename( "", "txt", qfalse, qtrue );
+}
+
+/*
 ================
 Con_Init
 ================
@@ -311,20 +322,21 @@ void Con_Init (void) {
 	con_notifytime = Cvar_Get ("con_notifytime", "3", 0);
 	con_conspeed = Cvar_Get ("scr_conspeed", "3", 0);
 
-	Field_Clear( &kg.g_consoleField );
-	kg.g_consoleField.widthInChars = g_console_field_width;
+	Field_Clear( &g_consoleField );
+	g_consoleField.widthInChars = g_console_field_width;
 	for ( i = 0 ; i < COMMAND_HISTORY ; i++ ) {
-		Field_Clear( &kg.historyEditLines[i] );
-		kg.historyEditLines[i].widthInChars = g_console_field_width;
+		Field_Clear( &historyEditLines[i] );
+		historyEditLines[i].widthInChars = g_console_field_width;
 	}
 
-	Cmd_AddCommand ("toggleconsole", Con_ToggleConsole_f);
-	Cmd_AddCommand ("messagemode", Con_MessageMode_f);
-	Cmd_AddCommand ("messagemode2", Con_MessageMode2_f);
-	Cmd_AddCommand ("messagemode3", Con_MessageMode3_f);
-	Cmd_AddCommand ("messagemode4", Con_MessageMode4_f);
-	Cmd_AddCommand ("clear", Con_Clear_f);
-	Cmd_AddCommand ("condump", Con_Dump_f);
+	Cmd_AddCommand( "toggleconsole", Con_ToggleConsole_f );
+	Cmd_AddCommand( "messagemode", Con_MessageMode_f );
+	Cmd_AddCommand( "messagemode2", Con_MessageMode2_f );
+	Cmd_AddCommand( "messagemode3", Con_MessageMode3_f );
+	Cmd_AddCommand( "messagemode4", Con_MessageMode4_f );
+	Cmd_AddCommand( "clear", Con_Clear_f );
+	Cmd_AddCommand( "condump", Con_Dump_f );
+	Cmd_SetCommandCompletionFunc( "condump", Cmd_CompleteTxtName );
 }
 
 
@@ -481,13 +493,13 @@ void Con_DrawInput (void) {
 		return;
 	}
 
-	y = con.vislines - ( SMALLCHAR_HEIGHT * (re.Language_IsAsian() ? 1.5 : 2) );
+	y = con.vislines - ( SMALLCHAR_HEIGHT * (re->Language_IsAsian() ? 1.5 : 2) );
 
-	re.SetColor( con.color );
+	re->SetColor( con.color );
 
-	SCR_DrawSmallChar( (int)(con.xadjust + 1 * SMALLCHAR_WIDTH), y, ']' );
+	SCR_DrawSmallChar( (int)(con.xadjust + 1 * SMALLCHAR_WIDTH), y, CONSOLE_PROMPT_CHAR );
 
-	Field_Draw( &kg.g_consoleField, (int)(con.xadjust + 2 * SMALLCHAR_WIDTH), y,
+	Field_Draw( &g_consoleField, (int)(con.xadjust + 2 * SMALLCHAR_WIDTH), y,
 				SCREEN_WIDTH - 3 * SMALLCHAR_WIDTH, qtrue, qtrue );
 }
 
@@ -512,7 +524,7 @@ void Con_DrawNotify (void)
 	const char* chattext;
 
 	currentColor = 7;
-	re.SetColor( g_color_table[currentColor] );
+	re->SetColor( g_color_table[currentColor] );
 
 	v = 0;
 	for (i= con.current-NUM_CON_TIMES+1 ; i<=con.current ; i++)
@@ -541,27 +553,27 @@ void Con_DrawNotify (void)
 		//
 		// (ignore colours since we're going to print the whole thing as one string)
 		//
-		if (re.Language_IsAsian())
+		if (re->Language_IsAsian())
 		{
-			static int iFontIndex = re.RegisterFont("ocr_a");	// this seems naughty
+			static int iFontIndex = re->RegisterFont("ocr_a");	// this seems naughty
 			const float fFontScale = 0.75f*con.yadjust;
-			const int iPixelHeightToAdvance =   2+(1.3/con.yadjust) * re.Font_HeightPixels(iFontIndex, fFontScale);	// for asian spacing, since we don't want glyphs to touch.
+			const int iPixelHeightToAdvance =   2+(1.3/con.yadjust) * re->Font_HeightPixels(iFontIndex, fFontScale);	// for asian spacing, since we don't want glyphs to touch.
 
 			// concat the text to be printed...
 			//
 			char sTemp[4096]={0};	// ott
 			for (x = 0 ; x < con.linewidth ; x++) 
 			{
-				if ( ( (text[x]>>8)&7 ) != currentColor ) {
-					currentColor = (text[x]>>8)&7;
-					strcat(sTemp,va("^%i", (text[x]>>8)&7) );
+				if ( ( (text[x]>>8)&Q_COLOR_BITS ) != currentColor ) {
+					currentColor = (text[x]>>8)&Q_COLOR_BITS;
+					strcat(sTemp,va("^%i", (text[x]>>8)&Q_COLOR_BITS) );
 				}
 				strcat(sTemp,va("%c",text[x] & 0xFF));				
 			}
 			//
 			// and print...
 			//
-			re.Font_DrawString(cl_conXOffset->integer + con.xadjust*(con.xadjust + (1*SMALLCHAR_WIDTH/*aesthetics*/)), con.yadjust*(v), sTemp, g_color_table[currentColor], iFontIndex, -1, fFontScale);
+			re->Font_DrawString(cl_conXOffset->integer + con.xadjust*(con.xadjust + (1*SMALLCHAR_WIDTH/*aesthetics*/)), con.yadjust*(v), sTemp, g_color_table[currentColor], iFontIndex, -1, fFontScale);
 
 			v +=  iPixelHeightToAdvance;
 		}
@@ -571,9 +583,9 @@ void Con_DrawNotify (void)
 				if ( ( text[x] & 0xff ) == ' ' ) {
 					continue;
 				}
-				if ( ( (text[x]>>8)&7 ) != currentColor ) {
-					currentColor = (text[x]>>8)&7;
-					re.SetColor( g_color_table[currentColor] );
+				if ( ( (text[x]>>8)&Q_COLOR_BITS ) != currentColor ) {
+					currentColor = (text[x]>>8)&Q_COLOR_BITS;
+					re->SetColor( g_color_table[currentColor] );
 				}
 				if (!cl_conXOffset)
 				{
@@ -586,7 +598,7 @@ void Con_DrawNotify (void)
 		}
 	}
 
-	re.SetColor( NULL );
+	re->SetColor( NULL );
 
 	if (Key_GetCatcher( ) & (KEYCATCH_UI | KEYCATCH_CGAME) ) {
 		return;
@@ -650,8 +662,8 @@ void Con_DrawSolidConsole( float frac ) {
 
 	// draw the bottom bar and version number
 
-	re.SetColor( console_color );
-	re.DrawStretchPic( 0, y, SCREEN_WIDTH, 2, 0, 0, 0, 0, cls.whiteShader );
+	re->SetColor( console_color );
+	re->DrawStretchPic( 0, y, SCREEN_WIDTH, 2, 0, 0, 0, 0, cls.whiteShader );
 
 	i = strlen( JK_VERSION );
 
@@ -671,7 +683,7 @@ void Con_DrawSolidConsole( float frac ) {
 	if (con.display != con.current)
 	{
 	// draw arrows to show the buffer is backscrolled
-		re.SetColor( console_color );
+		re->SetColor( console_color );
 		for (x=0 ; x<con.linewidth ; x+=4)
 			SCR_DrawSmallChar( (int) (con.xadjust + (x+1)*SMALLCHAR_WIDTH), y, '^' );
 		y -= SMALLCHAR_HEIGHT;
@@ -685,18 +697,18 @@ void Con_DrawSolidConsole( float frac ) {
 	}
 
 	currentColor = 7;
-	re.SetColor( g_color_table[currentColor] );
+	re->SetColor( g_color_table[currentColor] );
 
 	static int iFontIndexForAsian = 0;
 	const float fFontScaleForAsian = 0.75f*con.yadjust;
 	int iPixelHeightToAdvance = SMALLCHAR_HEIGHT;
-	if (re.Language_IsAsian())
+	if (re->Language_IsAsian())
 	{
 		if (!iFontIndexForAsian) 
 		{
-			iFontIndexForAsian = re.RegisterFont("ocr_a");
+			iFontIndexForAsian = re->RegisterFont("ocr_a");
 		}
-		iPixelHeightToAdvance = (1.3/con.yadjust) * re.Font_HeightPixels(iFontIndexForAsian, fFontScaleForAsian);	// for asian spacing, since we don't want glyphs to touch.
+		iPixelHeightToAdvance = (1.3/con.yadjust) * re->Font_HeightPixels(iFontIndexForAsian, fFontScaleForAsian);	// for asian spacing, since we don't want glyphs to touch.
 	}
 
 	for (i=0 ; i<rows ; i++, y -= iPixelHeightToAdvance, row--)
@@ -714,23 +726,23 @@ void Con_DrawSolidConsole( float frac ) {
 		//
 		// (ignore colours since we're going to print the whole thing as one string)
 		//
-		if (re.Language_IsAsian())
+		if (re->Language_IsAsian())
 		{
 			// concat the text to be printed...
 			//
 			char sTemp[4096]={0};	// ott
 			for (x = 0 ; x < con.linewidth ; x++) 
 			{
-				if ( ( (text[x]>>8)&7 ) != currentColor ) {
-					currentColor = (text[x]>>8)&7;
-					strcat(sTemp,va("^%i", (text[x]>>8)&7) );
+				if ( ( (text[x]>>8)&Q_COLOR_BITS ) != currentColor ) {
+					currentColor = (text[x]>>8)&Q_COLOR_BITS;
+					strcat(sTemp,va("^%i", (text[x]>>8)&Q_COLOR_BITS) );
 				}
 				strcat(sTemp,va("%c",text[x] & 0xFF));				
 			}
 			//
 			// and print...
 			//
-			re.Font_DrawString(con.xadjust*(con.xadjust + (1*SMALLCHAR_WIDTH/*(aesthetics)*/)), con.yadjust*(y), sTemp, g_color_table[currentColor], iFontIndexForAsian, -1, fFontScaleForAsian);
+			re->Font_DrawString(con.xadjust*(con.xadjust + (1*SMALLCHAR_WIDTH/*(aesthetics)*/)), con.yadjust*(y), sTemp, g_color_table[currentColor], iFontIndexForAsian, -1, fFontScaleForAsian);
 		}
 		else
 		{		
@@ -739,9 +751,9 @@ void Con_DrawSolidConsole( float frac ) {
 					continue;
 				}
 
-				if ( ( (text[x]>>8)&7 ) != currentColor ) {
-					currentColor = (text[x]>>8)&7;
-					re.SetColor( g_color_table[currentColor] );
+				if ( ( (text[x]>>8)&Q_COLOR_BITS ) != currentColor ) {
+					currentColor = (text[x]>>8)&Q_COLOR_BITS;
+					re->SetColor( g_color_table[currentColor] );
 				}
 				SCR_DrawSmallChar(  (int) (con.xadjust + (x+1)*SMALLCHAR_WIDTH), y, text[x] & 0xff );
 			}
@@ -751,7 +763,7 @@ void Con_DrawSolidConsole( float frac ) {
 	// draw the input prompt, user text, and cursor if desired
 	Con_DrawInput ();
 
-	re.SetColor( NULL );
+	re->SetColor( NULL );
 }
 
 
@@ -847,7 +859,7 @@ void Con_Close( void ) {
 	if ( !com_cl_running->integer ) {
 		return;
 	}
-	Field_Clear( &kg.g_consoleField );
+	Field_Clear( &g_consoleField );
 	Con_ClearNotify ();
 	Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CONSOLE );
 	con.finalFrac = 0;				// none visible

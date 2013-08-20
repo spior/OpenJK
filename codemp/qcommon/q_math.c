@@ -12,6 +12,7 @@ vec4_t		colorRed	= {1, 0, 0, 1};
 vec4_t		colorGreen	= {0, 1, 0, 1};
 vec4_t		colorBlue	= {0, 0, 1, 1};
 vec4_t		colorYellow	= {1, 1, 0, 1};
+vec4_t		colorOrange = {1, 0.5, 0, 1};
 vec4_t		colorMagenta= {1, 0, 1, 1};
 vec4_t		colorCyan	= {0, 1, 1, 1};
 vec4_t		colorWhite	= {1, 1, 1, 1};
@@ -22,18 +23,18 @@ vec4_t		colorDkGrey	= {0.25, 0.25, 0.25, 1};
 vec4_t		colorLtBlue	= {0.367f, 0.261f, 0.722f, 1};
 vec4_t		colorDkBlue	= {0.199f, 0.0f,   0.398f, 1};
 
-vec4_t	g_color_table[8] =
-	{
-	{0.0, 0.0, 0.0, 1.0},
-	{1.0, 0.0, 0.0, 1.0},
-	{0.0, 1.0, 0.0, 1.0},
-	{1.0, 1.0, 0.0, 1.0},
-	{0.0, 0.0, 1.0, 1.0},
-	{0.0, 1.0, 1.0, 1.0},
-	{1.0, 0.0, 1.0, 1.0},
-	{1.0, 1.0, 1.0, 1.0},
-	};
-
+vec4_t g_color_table[Q_COLOR_BITS+1] = {
+	{ 0.0, 0.0, 0.0, 1.0 },	// black
+	{ 1.0, 0.0, 0.0, 1.0 },	// red
+	{ 0.0, 1.0, 0.0, 1.0 },	// green
+	{ 1.0, 1.0, 0.0, 1.0 },	// yellow
+	{ 0.0, 0.0, 1.0, 1.0 },	// blue
+	{ 0.0, 1.0, 1.0, 1.0 },	// cyan
+	{ 1.0, 0.0, 1.0, 1.0 },	// magenta
+	{ 1.0, 1.0, 1.0, 1.0 },	// white
+	{ 1.0, 0.5, 0.0, 1.0 }, // orange
+	{ 0.5, 0.5, 0.5, 1.0 },	// md.grey
+};
 
 vec3_t	bytedirs[NUMVERTEXNORMALS] =
 {
@@ -695,19 +696,19 @@ void AddPointToBounds( const vec3_t v, vec3_t mins, vec3_t maxs ) {
 
 //JAC: Moved some math functions from q_shared.h
 
-ID_INLINE void VectorAdd( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut ) {
+QINLINE void VectorAdd( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut ) {
 	vecOut[0] = vec1[0]+vec2[0];
 	vecOut[1] = vec1[1]+vec2[1];
 	vecOut[2] = vec1[2]+vec2[2];
 }
 
-ID_INLINE void VectorSubtract( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut ) {
+QINLINE void VectorSubtract( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut ) {
 	vecOut[0] = vec1[0]-vec2[0];
 	vecOut[1] = vec1[1]-vec2[1];
 	vecOut[2] = vec1[2]-vec2[2];
 }
 
-ID_INLINE void VectorScale( const vec3_t vecIn, vec_t scale, vec3_t vecOut ) {
+QINLINE void VectorScale( const vec3_t vecIn, vec_t scale, vec3_t vecOut ) {
 	vecOut[0] = vecIn[0]*scale;
 	vecOut[1] = vecIn[1]*scale;
 	vecOut[2] = vecIn[2]*scale;
@@ -720,28 +721,28 @@ void VectorScale4( const vec4_t vecIn, vec_t scale, vec4_t vecOut ) {
 	vecOut[3] = vecIn[3]*scale;
 }
 
-ID_INLINE void VectorMA( const vec3_t vec1, float scale, const vec3_t vec2, vec3_t vecOut ) {
+QINLINE void VectorMA( const vec3_t vec1, float scale, const vec3_t vec2, vec3_t vecOut ) {
 	vecOut[0] = vec1[0] + scale*vec2[0];
 	vecOut[1] = vec1[1] + scale*vec2[1];
 	vecOut[2] = vec1[2] + scale*vec2[2];
 }
 
-ID_INLINE vec_t VectorLength( const vec3_t vec ) {
+QINLINE vec_t VectorLength( const vec3_t vec ) {
 	return (vec_t)sqrt( vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2] );
 }
 
-ID_INLINE vec_t VectorLengthSquared( const vec3_t vec ) {
+QINLINE vec_t VectorLengthSquared( const vec3_t vec ) {
 	return (vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]);
 }
 
-ID_INLINE vec_t Distance( const vec3_t p1, const vec3_t p2 ) {
+QINLINE vec_t Distance( const vec3_t p1, const vec3_t p2 ) {
 	vec3_t	v;
 
 	VectorSubtract( p2, p1, v );
 	return VectorLength( v );
 }
 
-ID_INLINE vec_t DistanceSquared( const vec3_t p1, const vec3_t p2 ) {
+QINLINE vec_t DistanceSquared( const vec3_t p1, const vec3_t p2 ) {
 	vec3_t	v;
 
 	VectorSubtract( p2, p1, v );
@@ -750,7 +751,7 @@ ID_INLINE vec_t DistanceSquared( const vec3_t p1, const vec3_t p2 ) {
 
 // fast vector normalize routine that does not check to make sure
 // that length != 0, nor does it return length, uses rsqrt approximation
-ID_INLINE void VectorNormalizeFast( vec3_t vec )
+QINLINE void VectorNormalizeFast( vec3_t vec )
 {
 	float ilength;
 
@@ -761,7 +762,7 @@ ID_INLINE void VectorNormalizeFast( vec3_t vec )
 	vec[2] *= ilength;
 }
 
-ID_INLINE vec_t VectorNormalize( vec3_t vec ) {
+QINLINE vec_t VectorNormalize( vec3_t vec ) {
 	float	length, ilength;
 
 	length = vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2];
@@ -777,7 +778,7 @@ ID_INLINE vec_t VectorNormalize( vec3_t vec ) {
 	return length;
 }
 
-ID_INLINE vec_t VectorNormalize2( const vec3_t vec, vec3_t vecOut ) {
+QINLINE vec_t VectorNormalize2( const vec3_t vec, vec3_t vecOut ) {
 	float	length, ilength;
 
 	length = vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2];
@@ -795,60 +796,87 @@ ID_INLINE vec_t VectorNormalize2( const vec3_t vec, vec3_t vecOut ) {
 	return length;
 }
 
-ID_INLINE void VectorCopy( const vec3_t vecIn, vec3_t vecOut ) {
+QINLINE void VectorCopy( const vec3_t vecIn, vec3_t vecOut ) {
 	vecOut[0]=vecIn[0]; vecOut[1]=vecIn[1]; vecOut[2]=vecIn[2];
 }
 
-ID_INLINE void VectorCopy4( const vec4_t vecIn, vec4_t vecOut ) {
+QINLINE void VectorCopy4( const vec4_t vecIn, vec4_t vecOut ) {
 	vecOut[0]=vecIn[0]; vecOut[1]=vecIn[1]; vecOut[2]=vecIn[2]; vecOut[3]=vecIn[3];
 }
 
-ID_INLINE void VectorSet( vec3_t vec, vec_t x, vec_t y, vec_t z ) {
+QINLINE void VectorSet( vec3_t vec, vec_t x, vec_t y, vec_t z ) {
 	vec[0]=x; vec[1]=y; vec[2]=z;
 }
 
-ID_INLINE void VectorSet4( vec4_t vec, vec_t x, vec_t y, vec_t z, vec_t w ) {
+QINLINE void VectorSet4( vec4_t vec, vec_t x, vec_t y, vec_t z, vec_t w ) {
 	vec[0]=x; vec[1]=y; vec[2]=z; vec[3]=w;
 }
 
-ID_INLINE void VectorSet5( vec5_t vec, vec_t x, vec_t y, vec_t z, vec_t w, vec_t u ) {
+QINLINE void VectorSet5( vec5_t vec, vec_t x, vec_t y, vec_t z, vec_t w, vec_t u ) {
 	vec[0]=x; vec[1]=y; vec[2]=z; vec[3]=w; vec[4]=u;
 }
 
-ID_INLINE void VectorClear( vec3_t vec ) {
+QINLINE void VectorClear( vec3_t vec ) {
 	vec[0] = vec[1] = vec[2] = 0;
 }
 
-ID_INLINE void VectorClear4( vec4_t vec ) {
+QINLINE void VectorClear4( vec4_t vec ) {
 	vec[0] = vec[1] = vec[2] = vec[3] = 0;
 }
 
-ID_INLINE void VectorInc( vec3_t vec ) {
+QINLINE void VectorInc( vec3_t vec ) {
 	vec[0] += 1.0f; vec[1] += 1.0f; vec[2] += 1.0f;
 }
 
-ID_INLINE void VectorDec( vec3_t vec ) {
+QINLINE void VectorDec( vec3_t vec ) {
 	vec[0] -= 1.0f; vec[1] -= 1.0f; vec[2] -= 1.0f;
 }
 
-ID_INLINE void VectorInverse( vec3_t vec ) {
+QINLINE void VectorInverse( vec3_t vec ) {
 	vec[0] = -vec[0]; vec[1] = -vec[1]; vec[2] = -vec[2];
 }
 
-ID_INLINE void CrossProduct( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut ) {
+QINLINE void CrossProduct( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut ) {
 	vecOut[0] = vec1[1]*vec2[2] - vec1[2]*vec2[1];
 	vecOut[1] = vec1[2]*vec2[0] - vec1[0]*vec2[2];
 	vecOut[2] = vec1[0]*vec2[1] - vec1[1]*vec2[0];
 }
 
-ID_INLINE vec_t DotProduct( const vec3_t vec1, const vec3_t vec2 ) {
+QINLINE vec_t DotProduct( const vec3_t vec1, const vec3_t vec2 ) {
 	return vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2];
 }
 
-ID_INLINE qboolean VectorCompare( const vec3_t vec1, const vec3_t vec2 ) {
+QINLINE qboolean VectorCompare( const vec3_t vec1, const vec3_t vec2 ) {
 	if ( vec1[0] != vec2[0] || vec1[1] != vec2[1] || vec1[2] != vec2[2] )
 		return qfalse;
 	return qtrue;
+}
+
+QINLINE void SnapVector( float *v ) {
+#ifdef _MSC_VER
+	// pitiful attempt to reduce _ftol2 calls -rww
+	static int i;
+	static float f;
+
+	f = *v;
+	__asm fld f
+	__asm fistp	i
+	*v = i;
+	v++;
+	f = *v;
+	__asm fld f
+	__asm fistp i
+	*v = i;
+	v++;
+	f = *v;
+	__asm fld f
+	__asm fistp i
+	*v = i;
+#else // mac, linux, mingw
+	v[0] = (int)v[0];
+	v[1] = (int)v[1];
+	v[2] = (int)v[2];
+#endif
 }
 
 int Q_log2( int val ) {

@@ -297,6 +297,7 @@ then searches for a command or variable that matches the first token.
 */
 
 typedef void (*xcommand_t) (void);
+typedef void ( *callbackFunc_t )( const char *s );
 
 void	Cmd_Init (void);
 
@@ -308,21 +309,26 @@ void	Cmd_AddCommand( const char *cmd_name, xcommand_t function );
 // as a clc_clientCommand instead of executed locally
 
 void	Cmd_RemoveCommand( const char *cmd_name );
+typedef void (*completionFunc_t)( char *args, int argNum );
 
-char 	*Cmd_CompleteCommand( const char *partial );
-// attempts to match a partial command for automatic command line completion
-// returns NULL if nothing fits
+void	Cmd_CommandCompletion( callbackFunc_t callback );
+// callback with each valid string
+void Cmd_SetCommandCompletionFunc( const char *command, completionFunc_t complete );
+void Cmd_CompleteArgument( const char *command, char *args, int argNum );
+void Cmd_CompleteCfgName( char *args, int argNum );
 
 int		Cmd_Argc (void);
 char	*Cmd_Argv (int arg);
 void	Cmd_ArgvBuffer( int arg, char *buffer, int bufferLength );
 char	*Cmd_Args (void);
+char	*Cmd_ArgsFrom( int arg );
 void	Cmd_ArgsBuffer( char *buffer, int bufferLength );
 // The functions that execute commands get their parameters with these
 // functions. Cmd_Argv () will return an empty string, not a NULL
 // if arg > argc, so string operations are allways safe.
 
 void	Cmd_TokenizeString( const char *text );
+void	Cmd_TokenizeStringIgnoreQuotes( const char *text_in );
 // Takes a null terminated string.  Does not need to be /n terminated.
 // breaks the string up into arg tokens.
 
@@ -373,6 +379,9 @@ void	Cvar_Update( vmCvar_t *vmCvar );
 void 	Cvar_Set( const char *var_name, const char *value );
 // will create the variable with no flags if it doesn't exist
 
+cvar_t	*Cvar_Set2(const char *var_name, const char *value, qboolean force);
+// same as Cvar_Set, but allows more control over setting of cvar
+
 void	Cvar_SetValue( const char *var_name, float value );
 // expands value to a string and calls Cvar_Set
 
@@ -380,13 +389,15 @@ float	Cvar_VariableValue( const char *var_name );
 int		Cvar_VariableIntegerValue( const char *var_name );
 // returns 0 if not defined or non numeric
 
-const char	*Cvar_VariableString( const char *var_name );
+char	*Cvar_VariableString( const char *var_name );
 void	Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
 // returns an empty string if not defined
 
-char 	*Cvar_CompleteVariable( const char *partial );
-// attempts to match a partial variable name for command line completion
-// returns NULL if nothing fits
+int	Cvar_Flags(const char *var_name);
+// returns CVAR_NONEXISTENT if cvar doesn't exist or the flags of that particular CVAR.
+
+void	Cvar_CommandCompletion( callbackFunc_t callback );
+// callback with each valid string
 
 void 	Cvar_Reset( const char *var_name );
 void 	Cvar_ForceReset( const char *var_name );
@@ -409,7 +420,9 @@ char	*Cvar_InfoString( int bit );
 // returns an info string containing all the cvars that have the given bit set
 // in their flags ( CVAR_USERINFO, CVAR_SERVERINFO, CVAR_SYSTEMINFO, etc )
 void	Cvar_InfoStringBuffer( int bit, char *buff, int buffsize );
+void Cvar_CheckRange( cvar_t *cv, float minVal, float maxVal, qboolean shouldBeIntegral );
 
+void	Cvar_Restart(qboolean unsetVM);
 void	Cvar_Restart_f( void );
 
 extern	int			cvar_modifiedFlags;
@@ -439,6 +452,8 @@ char	**FS_ListFiles( const char *directory, const char *extension, int *numfiles
 // the returned files will not include any directories or /
 
 void	FS_FreeFileList( char **filelist );
+
+char   *FS_BuildOSPath( const char *base, const char *game, const char *qpath );
 
 int	FS_GetFileList(  const char *path, const char *extension, char *listbuf, int bufsize );
 
@@ -493,6 +508,8 @@ int		FS_FTell( fileHandle_t f );
 
 void	FS_Flush( fileHandle_t f );
 
+void	FS_FilenameCompletion( const char *dir, const char *ext, qboolean stripExt, void(*callback)( const char *s ), qboolean allowNonPureFilesOnDisk );
+
 void 	QDECL FS_Printf( fileHandle_t f, const char *fmt, ... );
 // like fprintf
 
@@ -508,6 +525,31 @@ qboolean FS_FilenameCompare( const char *s1, const char *s2 );
 //
 void		FS_DeleteUserGenFile( const char *filename );
 qboolean	FS_MoveUserGenFile  ( const char *filename_src, const char *filename_dst );
+
+/*
+==============================================================
+
+Edit fields and command line history/completion
+
+==============================================================
+*/
+
+#define CONSOLE_PROMPT_CHAR ']'
+#define	MAX_EDIT_LINE		256
+#define COMMAND_HISTORY		32
+
+typedef struct {
+	int		cursor;
+	int		scroll;
+	int		widthInChars;
+	char	buffer[MAX_EDIT_LINE];
+} field_t;
+
+void Field_Clear( field_t *edit );
+void Field_AutoComplete( field_t *edit );
+void Field_CompleteKeyname( void );
+void Field_CompleteFilename( const char *dir, const char *ext, qboolean stripExt, qboolean allowNonPureFilesOnDisk );
+void Field_CompleteCommand( char *cmd, qboolean doCommands, qboolean doCvars );
 
 /*
 ==============================================================
@@ -533,6 +575,7 @@ int			Com_EventLoop( void );
 int			Com_Milliseconds( void );	// will be journaled properly
 unsigned	Com_BlockChecksum( const void *buffer, int length );
 int			Com_Filter(const char *filter, const char *name, int casesensitive);
+int			Com_FilterPath(const char *filter, const char *name, int casesensitive);
 qboolean	Com_SafeMode( void );
 
 void		Com_StartupVariable( const char *match );
@@ -696,6 +739,9 @@ void CL_FlushMemory( void );
 
 void CL_StartHunkUsers( void );
 
+void Key_KeynameCompletion ( void(*callback)( const char *s ) );
+// for keyname autocompletion
+
 void Key_WriteBindings( fileHandle_t f );
 // for writing the config files
 
@@ -814,7 +860,7 @@ char	*Sys_DefaultHomePath(void);
 const char *Sys_Dirname( char *path );
 const char *Sys_Basename( char *path );
 
-char **Sys_ListFiles( const char *directory, const char *extension, int *numfiles, qboolean wantsubs );
+char **Sys_ListFiles( const char *directory, const char *extension, char *filter, int *numfiles, qboolean wantsubs );
 void	Sys_FreeFileList( char **filelist );
 
 void	Sys_BeginProfiling( void );

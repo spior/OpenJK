@@ -1,8 +1,8 @@
 //Anything above this #include will be ignored by the compiler
 #include "qcommon/exe_headers.h"
-
 #include "qcommon/cm_local.h"
 #include "rd-common/tr_types.h"
+#include "client/cl_cgameapi.h"
 #include "RM_Headers.h"
 
 #ifdef _MSC_VER
@@ -293,7 +293,7 @@ void CRMLandScape::LoadDensityMap(const char *td)
 	{
 		Com_DPrintf("CG_Terrain: Loading density map %s.....\n", densityMap);
 #ifndef DEDICATED
-		re.LoadDataImage(densityMap, &imageData, &iWidth, &iHeight);
+		re->LoadDataImage(densityMap, &imageData, &iWidth, &iHeight);
 		if(imageData)
 		{
 			if(strstr(densityMap, "density_"))
@@ -301,8 +301,8 @@ void CRMLandScape::LoadDensityMap(const char *td)
 				seed = strtoul(Info_ValueForKey(td, "seed"),&ptr,10);
 				CreateRandomDensityMap(imageData, iWidth, iHeight, seed);
 			}
-			re.Resample(imageData, iWidth, iHeight, mDensityMap, common->GetBlockWidth(), common->GetBlockHeight(), 1);
-			re.InvertImage(mDensityMap, common->GetBlockWidth(), common->GetBlockHeight(), 1);
+			re->Resample(imageData, iWidth, iHeight, mDensityMap, common->GetBlockWidth(), common->GetBlockHeight(), 1);
+			re->InvertImage(mDensityMap, common->GetBlockWidth(), common->GetBlockHeight(), 1);
 			Z_Free(imageData);
 		}
 #endif
@@ -356,9 +356,9 @@ void CRMLandScape::Sprinkle(CCMPatch *patch, CCGHeightDetails *hd, int level)
 
 			rm = hd->GetRandomModel(common);
 
-			refEnt.hModel = re.RegisterModel(rm->GetModelName());
+			refEnt.hModel = re->RegisterModel(rm->GetModelName());
 			refEnt.frame = 0;
-			re.ModelBoundsRef(&refEnt, bounds[0], bounds[1]);
+			re->ModelBoundsRef(&refEnt, bounds[0], bounds[1]);
 
 			// Calculate the scale using some magic to help ensure that the
 			// scales are never too different from eachother.  Otherwise you
@@ -408,7 +408,7 @@ void CRMLandScape::Sprinkle(CCMPatch *patch, CCGHeightDetails *hd, int level)
 				continue;
 			}
 			// FIXME: shouldn't be using a hard-coded 1280 number, only allow to spawn if inside player clip brush? 
-	//		if( !(CONTENTS_PLAYERCLIP & VM_Call( cgvm, CG_POINT_CONTENTS )) )
+	//		if( !(CONTENTS_PLAYERCLIP & CGVM_PointContents()) )
 	//		{
 	//			continue;
 	//		}
@@ -428,7 +428,8 @@ void CRMLandScape::Sprinkle(CCMPatch *patch, CCGHeightDetails *hd, int level)
 			td->mSkipNumber = -1;
 			td->mMask = MASK_PLAYERSOLID;
 
-			VM_Call( cgvm, CG_TRACE );
+			CGVM_Trace();
+			
 			if(td->mResult.surfaceFlags & SURF_NOMISCENTS)
 			{
 				continue;
@@ -448,7 +449,7 @@ void CRMLandScape::Sprinkle(CCMPatch *patch, CCGHeightDetails *hd, int level)
 			VectorCopy(origin, data->mOrigin);
 			VectorCopy(angles, data->mAngles);
 			VectorCopy(scale, data->mScale);
-			VM_Call( cgvm, CG_MISC_ENT);
+			CGVM_MiscEnt();
 			mModelCount++;
 		}
 	}

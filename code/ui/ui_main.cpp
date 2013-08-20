@@ -2395,7 +2395,7 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 				}
 
 				filelen = strlen(fileptr);
-				COM_StripExtension(fileptr,skinname);
+				COM_StripExtension(fileptr,skinname, sizeof(skinname));
 
 				if (bIsImageFile(dirptr, skinname, building))
 				{ //if it exists
@@ -3806,7 +3806,7 @@ int UI_OwnerDrawWidth(int ownerDraw, float scale)
 		if (Display_KeyBindPending()) 
 		{
 #ifndef __NO_JK2
-			if( Cvar_VariableIntegerValue( "com_jk2 " ) )
+			if( com_jk2 && com_jk2->integer )
 				s = ui.SP_GetStringTextString("MENUS_WAITINGFORKEY");
 			else
 #endif
@@ -6146,7 +6146,7 @@ static void UI_UpdateSaberHilt( qboolean secondSaber )
 	{//successfully found a model
 		ItemParse_asset_model_go( item, modelPath );//set the model
 		//get the customSkin, if any
-		//COM_StripExtension( modelPath, skinPath );
+		//COM_StripExtension( modelPath, skinPath, sizeof(skinPath) );
 		//COM_DefaultExtension( skinPath, sizeof( skinPath ), ".skin" );
 		if ( UI_SaberSkinForSaber( model, skinPath ) )
 		{

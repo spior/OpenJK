@@ -15,6 +15,8 @@
 #define HOMEPATH_NAME_WIN "OpenJK"
 #define HOMEPATH_NAME_MACOSX HOMEPATH_NAME_WIN
 
+#define	BASEGAME "base"
+
 //NOTENOTE: Only change this to re-point ICARUS to a new script directory
 #define Q3_SCRIPT_DIR	"scripts"
 
@@ -111,7 +113,7 @@
 #endif
 
 // this is the define for determining if we have an asm version of a C function
-#if (defined(_M_IX86) || defined(__i386__)) && !defined(__sun__) && !defined(__LCC__)
+#if (defined(_M_IX86) || defined(__i386__)) && !defined(__sun__)
 	#define id386	1
 #else
 	#define id386	0
@@ -182,7 +184,7 @@ float FloatSwap( const float *f );
 		#define OS_STRING "win_mingw"
 	#endif
 
-	#define ID_INLINE __inline
+	#define QINLINE __inline
 	#define PATH_SEP '\\'
 
 	#if defined(_M_IX86) || defined(__i386__)
@@ -212,7 +214,7 @@ float FloatSwap( const float *f );
 	#define __cdecl
 	#define __declspec(x)
 	#define stricmp strcasecmp
-	#define ID_INLINE /*inline*/ 
+	#define QINLINE /*inline*/ 
 
     #define OS_STRING "MacOSX"
 
@@ -282,7 +284,7 @@ float FloatSwap( const float *f );
 #ifdef __MACOS__
 
 	#include <MacTypes.h>
-	#define ID_INLINE inline 
+	#define QINLINE inline 
 
 	#define	CPUSTRING "MacOS-PPC"
 
@@ -316,8 +318,6 @@ float FloatSwap( const float *f );
 	// bk001205 - from Makefile
 	#define stricmp strcasecmp
 
-	#define ID_INLINE /*inline*/
-
 	#define	PATH_SEP '/'
 	#define RAND_MAX 2147483647
 
@@ -330,7 +330,7 @@ float FloatSwap( const float *f );
 	#ifdef __clang__
 		#define QINLINE static inline
 	#else
-		#define QINLINE inline
+		#define QINLINE /*inline*/
 	#endif
 
 	#define PATH_SEP '/'
@@ -422,16 +422,15 @@ float FloatSwap( const float *f );
 #if !defined(ARCH_STRING)
 	#error "Architecture not supported"
 #endif
-#if !defined(ID_INLINE)
-	#error "ID_INLINE not defined"
+#if !defined(DLL_EXT)
+	#error "DLL_EXT not defined"
+#endif
+#if !defined(QINLINE)
+	#error "QINLINE not defined"
 #endif
 #if !defined(PATH_SEP)
 	#error "PATH_SEP not defined"
 #endif
-#if !defined(DLL_EXT)
-	#error "DLL_EXT not defined"
-#endif
-
 
 // endianness
 void CopyShortSwap( void *dest, void *src );
@@ -1341,6 +1340,7 @@ extern	vec4_t		colorRed;
 extern	vec4_t		colorGreen;
 extern	vec4_t		colorBlue;
 extern	vec4_t		colorYellow;
+extern	vec4_t		colorOrange;
 extern	vec4_t		colorMagenta;
 extern	vec4_t		colorCyan;
 extern	vec4_t		colorWhite;
@@ -1351,8 +1351,10 @@ extern	vec4_t		colorLtBlue;
 extern	vec4_t		colorDkBlue;
 
 #define Q_COLOR_ESCAPE	'^'
+#define Q_COLOR_BITS 0xF // was 7
+
 // you MUST have the last bit on here about colour strings being less than 7 or taiwanese strings register as colour!!!!
-#define Q_IsColorString(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= '7' && *((p)+1) >= '0' )
+#define Q_IsColorString(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= '9' && *((p)+1) >= '0' )
 // Correct version of the above for Q_StripColor
 #define Q_IsColorStringExt(p)	((p) && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) >= '0' && *((p)+1) <= '9') // ^[0-9]
 
@@ -1365,7 +1367,9 @@ extern	vec4_t		colorDkBlue;
 #define COLOR_CYAN		'5'
 #define COLOR_MAGENTA	'6'
 #define COLOR_WHITE		'7'
-#define ColorIndex(c)	( ( (c) - '0' ) & 7 )
+#define COLOR_ORANGE	'8'
+#define COLOR_GREY		'9'
+#define ColorIndex(c)	( ( (c) - '0' ) & Q_COLOR_BITS )
 
 #define S_COLOR_BLACK	"^0"
 #define S_COLOR_RED		"^1"
@@ -1375,8 +1379,10 @@ extern	vec4_t		colorDkBlue;
 #define S_COLOR_CYAN	"^5"
 #define S_COLOR_MAGENTA	"^6"
 #define S_COLOR_WHITE	"^7"
+#define S_COLOR_ORANGE	"^8"
+#define S_COLOR_GREY	"^9"
 
-extern vec4_t	g_color_table[8];
+extern vec4_t g_color_table[Q_COLOR_BITS+1];
 
 #define	MAKERGB( v, r, g, b ) v[0]=r;v[1]=g;v[2]=b
 #define	MAKERGBA( v, r, g, b, a ) v[0]=r;v[1]=g;v[2]=b;v[3]=a
@@ -1441,31 +1447,32 @@ void ByteToDir( int b, vec3_t dir );
 #define DEG2RAD( deg ) ( ((deg)*M_PI) / 180.0f )
 #define RAD2DEG( rad ) ( ((rad)*180.0f) / M_PI )
 
-extern ID_INLINE void		VectorAdd( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut );
-extern ID_INLINE void		VectorSubtract( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut );
-extern ID_INLINE void		VectorScale( const vec3_t vecIn, vec_t scale, vec3_t vecOut );
-extern ID_INLINE void		VectorScale4( const vec4_t vecIn, vec_t scale, vec4_t vecOut );
-extern ID_INLINE void		VectorMA( const vec3_t vec1, float scale, const vec3_t vec2, vec3_t vecOut );
-extern ID_INLINE vec_t		VectorLength( const vec3_t vec );
-extern ID_INLINE vec_t		VectorLengthSquared( const vec3_t vec );
-extern ID_INLINE vec_t		Distance( const vec3_t p1, const vec3_t p2 );
-extern ID_INLINE vec_t		DistanceSquared( const vec3_t p1, const vec3_t p2 );
-extern ID_INLINE void		VectorNormalizeFast( vec3_t vec );
-extern ID_INLINE vec_t		VectorNormalize( vec3_t vec );
-extern ID_INLINE vec_t		VectorNormalize2( const vec3_t vec, vec3_t vecOut );
-extern ID_INLINE void		VectorCopy( const vec3_t vecIn, vec3_t vecOut );
-extern ID_INLINE void		VectorCopy4( const vec4_t vecIn, vec4_t vecOut );
-extern ID_INLINE void		VectorSet( vec3_t vec, vec_t x, vec_t y, vec_t z );
-extern ID_INLINE void		VectorSet4( vec4_t vec, vec_t x, vec_t y, vec_t z, vec_t w );
-extern ID_INLINE void		VectorSet5( vec5_t vec, vec_t x, vec_t y, vec_t z, vec_t w, vec_t u );
-extern ID_INLINE void		VectorClear( vec3_t vec );
-extern ID_INLINE void		VectorClear4( vec4_t vec );
-extern ID_INLINE void		VectorInc( vec3_t vec );
-extern ID_INLINE void		VectorDec( vec3_t vec );
-extern ID_INLINE void		VectorInverse( vec3_t vec );
-extern ID_INLINE void		CrossProduct( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut );
-extern ID_INLINE vec_t		DotProduct( const vec3_t vec1, const vec3_t vec2 );
-extern ID_INLINE qboolean	VectorCompare( const vec3_t vec1, const vec3_t vec2 );
+extern QINLINE void		VectorAdd( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut );
+extern QINLINE void		VectorSubtract( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut );
+extern QINLINE void		VectorScale( const vec3_t vecIn, vec_t scale, vec3_t vecOut );
+extern QINLINE void		VectorScale4( const vec4_t vecIn, vec_t scale, vec4_t vecOut );
+extern QINLINE void		VectorMA( const vec3_t vec1, float scale, const vec3_t vec2, vec3_t vecOut );
+extern QINLINE vec_t		VectorLength( const vec3_t vec );
+extern QINLINE vec_t		VectorLengthSquared( const vec3_t vec );
+extern QINLINE vec_t		Distance( const vec3_t p1, const vec3_t p2 );
+extern QINLINE vec_t		DistanceSquared( const vec3_t p1, const vec3_t p2 );
+extern QINLINE void		VectorNormalizeFast( vec3_t vec );
+extern QINLINE vec_t		VectorNormalize( vec3_t vec );
+extern QINLINE vec_t		VectorNormalize2( const vec3_t vec, vec3_t vecOut );
+extern QINLINE void		VectorCopy( const vec3_t vecIn, vec3_t vecOut );
+extern QINLINE void		VectorCopy4( const vec4_t vecIn, vec4_t vecOut );
+extern QINLINE void		VectorSet( vec3_t vec, vec_t x, vec_t y, vec_t z );
+extern QINLINE void		VectorSet4( vec4_t vec, vec_t x, vec_t y, vec_t z, vec_t w );
+extern QINLINE void		VectorSet5( vec5_t vec, vec_t x, vec_t y, vec_t z, vec_t w, vec_t u );
+extern QINLINE void		VectorClear( vec3_t vec );
+extern QINLINE void		VectorClear4( vec4_t vec );
+extern QINLINE void		VectorInc( vec3_t vec );
+extern QINLINE void		VectorDec( vec3_t vec );
+extern QINLINE void		VectorInverse( vec3_t vec );
+extern QINLINE void		CrossProduct( const vec3_t vec1, const vec3_t vec2, vec3_t vecOut );
+extern QINLINE vec_t		DotProduct( const vec3_t vec1, const vec3_t vec2 );
+extern QINLINE qboolean	VectorCompare( const vec3_t vec1, const vec3_t vec2 );
+extern QINLINE void		SnapVector( float *v );
 
 #define				VectorAddM( vec1, vec2, vecOut )		((vecOut)[0]=(vec1)[0]+(vec2)[0], (vecOut)[1]=(vec1)[1]+(vec2)[1], (vecOut)[2]=(vec1)[2]+(vec2)[2])
 #define				VectorSubtractM( vec1, vec2, vecOut )	((vecOut)[0]=(vec1)[0]-(vec2)[0], (vecOut)[1]=(vec1)[1]-(vec2)[1], (vecOut)[2]=(vec1)[2]-(vec2)[2])
@@ -1500,49 +1507,6 @@ extern ID_INLINE qboolean	VectorCompare( const vec3_t vec1, const vec3_t vec2 );
 #define VectorAdvance(a,s,b,c)			(((c)[0]=(a)[0] + s * ((b)[0] - (a)[0])),((c)[1]=(a)[1] + s * ((b)[1] - (a)[1])),((c)[2]=(a)[2] + s * ((b)[2] - (a)[2])))
 #define VectorAverage(a,b,c)			(((c)[0]=((a)[0]+(b)[0])*0.5f),((c)[1]=((a)[1]+(b)[1])*0.5f),((c)[2]=((a)[2]+(b)[2])*0.5f))
 #define VectorNegate(a,b)				((b)[0]=-(a)[0],(b)[1]=-(a)[1],(b)[2]=-(a)[2])
-
-#ifdef __LCC__
-#ifdef VectorCopy
-#undef VectorCopy
-// this is a little hack to get more efficient copies in our interpreter
-typedef struct {
-	float	v[3];
-} vec3struct_t;
-#define VectorCopy(a,b)	*(vec3struct_t *)b=*(vec3struct_t *)a;
-#define ID_INLINE static
-#endif
-#endif
-
-#if defined(MACOS_X) || defined(__linux__)
-	#define	SnapVector(v) {v[0]=((int)(v[0]));v[1]=((int)(v[1]));v[2]=((int)(v[2]));}
-#else 
-	#if !defined(__LCC__) && !defined(MINGW32)
-		//pitiful attempt to reduce _ftol2 calls -rww
-		static ID_INLINE void SnapVector( float *v )
-		{
-			//RAZTODO: q_math.c plz
-			static int i;
-			static float f;
-
-			f = *v;
-			__asm fld f
-			__asm fistp	i
-			*v = i;
-			v++;
-			f = *v;
-			__asm fld f
-			__asm fistp i
-			*v = i;
-			v++;
-			f = *v;
-			__asm fld f
-			__asm fistp i
-			*v = i;
-		}
-	#else
-		#define	SnapVector(v) {v[0]=((int)(v[0]));v[1]=((int)(v[1]));v[2]=((int)(v[2]));}
-	#endif // __LCC__ || MINGW32
-#endif // MACOS_X || __linux__
 
 unsigned ColorBytes3 (float r, float g, float b);
 unsigned ColorBytes4 (float r, float g, float b, float a);
@@ -1603,10 +1567,10 @@ void NormalToLatLong( const vec3_t normal, byte bytes[2] ); //rwwRMG - added
 
 //=============================================
 
-extern ID_INLINE int Com_Clampi( int min, int max, int value ); //rwwRMG - added
-extern ID_INLINE float Com_Clamp( float min, float max, float value );
-extern ID_INLINE int Com_AbsClampi( int min, int max, int value );
-extern ID_INLINE float Com_AbsClamp( float min, float max, float value );
+extern QINLINE int Com_Clampi( int min, int max, int value ); //rwwRMG - added
+extern QINLINE float Com_Clamp( float min, float max, float value );
+extern QINLINE int Com_AbsClampi( int min, int max, int value );
+extern QINLINE float Com_AbsClamp( float min, float max, float value );
 
 char	*COM_SkipPath( char *pathname );
 const char	*COM_GetExtension( const char *name );
@@ -1661,6 +1625,9 @@ void Parse3DMatrix (const char **buf_p, int z, int y, int x, float *m);
 int Com_HexStrToInt( const char *str );
 
 int	QDECL Com_sprintf (char *dest, int size, const char *fmt, ...);
+
+char *Com_SkipTokens( char *s, int numTokens, char *sep );
+char *Com_SkipCharset( char *s, char *sep );
 
 void Com_RandomBytes( byte *string, int len );
 
@@ -1740,6 +1707,9 @@ void	Swap_Init (void);
 */
 char	* QDECL va(const char *format, ...);
 
+#define TRUNCATE_LENGTH	64
+void Com_TruncateLongString( char *buffer, const char *s );
+
 //=============================================
 
 //
@@ -1754,8 +1724,13 @@ qboolean Info_Validate( const char *s );
 void Info_NextPair( const char **s, char *key, char *value );
 
 // this is only here so the functions in q_shared.c and bg_*.c can link
-void	QDECL Com_Error( int level, const char *error, ... );
-void	QDECL Com_Printf( const char *msg, ... );
+#if defined( _GAME ) || defined( _CGAME ) || defined( _UI )
+	void (*Com_Error)( int level, const char *error, ... );
+	void (*Com_Printf)( const char *msg, ... );
+#else
+	void QDECL Com_Error( int level, const char *error, ... );
+	void QDECL Com_Printf( const char *msg, ... );
+#endif
 
 
 /*

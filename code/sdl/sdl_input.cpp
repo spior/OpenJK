@@ -874,7 +874,7 @@ void IN_Frame (void) {
 	// If not DISCONNECTED (main menu) or ACTIVE (in game), we're loading
 	loading = (qboolean)( cls.state != CA_DISCONNECTED && cls.state != CA_ACTIVE );
 
-	if( !cls.glconfig.isFullscreen && ( cls.keyCatchers & KEYCATCH_CONSOLE ) )
+	if( !cls.glconfig.isFullscreen && ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) )
 	{
 		// Console is down in windowed mode
 		IN_DeactivateMouse( );
@@ -896,7 +896,7 @@ void IN_Frame (void) {
 	if( ( vidRestartTime != 0 ) && ( vidRestartTime < Sys_Milliseconds( ) ) )
 	{
 		vidRestartTime = 0;
-		Cbuf_AddText( "vid_restart" );
+		Cbuf_AddText( "vid_restart\n" );
 	}
 }
 
@@ -936,7 +936,4 @@ void IN_Restart( void )
 {
 	IN_ShutdownJoystick( );
 	IN_Init( SDL_window );
-}
-
-void Sys_SendKeyEvents (void) {
 }

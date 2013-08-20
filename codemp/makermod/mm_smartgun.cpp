@@ -1,7 +1,7 @@
 
 extern "C"
 {
-#include "../codeMP/cgame/cg_local.h"
+#include "../cgame/cg_local.h"
 }
 
 int strocr(const char *Src, const char *Ocr)
@@ -63,5 +63,5 @@ void MM_SmartGun(qboolean altFire, qboolean isClient, int clientNum, vec3_t orig
 	strrpl(buf, buf, sizeof(buf), "$xyz$", rplw);
 	strcat(buf, "\n");
 
-	trap_SendConsoleCommand(buf);
+	trap->SendConsoleCommand(buf);
 }

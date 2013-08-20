@@ -866,8 +866,6 @@ void		R_ModelBounds( qhandle_t handle, vec3_t mins, vec3_t maxs );
 
 void		R_Modellist_f (void);
 
-extern refimport_t ri;
-
 //====================================================
 
 
@@ -1387,7 +1385,6 @@ void		R_GammaCorrect( byte *buffer, int bufSize );
 void	R_ImageList_f( void );
 void	R_SkinList_f( void );
 void	R_FontList_f( void );
-void	R_ScreenShot_f( void );
 
 void	R_InitFogTable( void );
 float	R_FogFactor( float s, float t );
@@ -1909,6 +1906,6 @@ typedef struct decalPoly_s
 
 } decalPoly_t;
 
-extern refexport_t re;
+extern refimport_t *ri;
 
 qboolean ShaderHashTableExists(void);

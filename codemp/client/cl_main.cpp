@@ -7,6 +7,8 @@
 #include "qcommon/stringed_ingame.h"
 #include <limits.h>
 #include "snd_local.h"
+#include "cl_cgameapi.h"
+#include "cl_uiapi.h"
 
 //rwwRMG - added:
 #include "qcommon/cm_local.h"
@@ -87,17 +89,17 @@ vec3_t cl_windVec;
 clientActive_t		cl;
 clientConnection_t	clc;
 clientStatic_t		cls;
-vm_t				*cgvm;
 
 netadr_t rcon_address;
 
 // Structure containing functions exported from refresh DLL
-refexport_t	re = {0};
+refexport_t	*re = NULL;
 static void	*rendererLib = NULL;
 
+const CGhoul2Info NullG2;
 //RAZFIXME: BAD BAD, maybe? had to move it out of ghoul2_shared.h -> CGhoul2Info_v at the least..
 IGhoul2InfoArray &_TheGhoul2InfoArray( void ) {
-	return re.TheGhoul2InfoArray();
+	return re->TheGhoul2InfoArray();
 }
 
 ping_t	cl_pinglist[MAX_PINGREQUESTS];
@@ -434,7 +436,7 @@ void CL_DemoCompleted( void ) {
 	//after a demo is finished playing instead.
 	CL_Disconnect_f();
 	S_StopAllSounds();
-	VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
+	UIVM_SetActiveMenu( UIMENU_MAIN );
 
 	CL_NextDemo();
 }
@@ -490,6 +492,22 @@ void CL_ReadDemoMessage( void ) {
 	clc.lastPacketTime = cls.realtime;
 	buf.readcount = 0;
 	CL_ParseServerMessage( &buf );
+}
+
+/*
+====================
+CL_CompleteDemoName
+====================
+*/
+static void CL_CompleteDemoName( char *args, int argNum )
+{
+	if( argNum == 2 )
+	{
+		char demoExt[16];
+
+		Com_sprintf(demoExt, sizeof(demoExt), ".dm_%d", PROTOCOL_VERSION);
+		Field_CompleteFilename( "demos", demoExt, qtrue, qtrue );
+	}
 }
 
 /*
@@ -621,8 +639,8 @@ void CL_ShutdownAll( qboolean shutdownRef, qboolean delayFreeVM ) {
 	// shutdown the renderer
 	if(shutdownRef)
 		CL_ShutdownRef();
-	if ( re.Shutdown ) {
-		re.Shutdown( qfalse );		// don't destroy window or context
+	if ( re && re->Shutdown ) {
+		re->Shutdown( qfalse );		// don't destroy window or context
 	}
 
 	cls.uiStarted = qfalse;
@@ -774,8 +792,8 @@ void CL_Disconnect( qboolean showMainMenu ) {
 		clc.demofile = 0;
 	}
 
-	if ( uivm && showMainMenu ) {
-		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_NONE );
+	if ( cls.uiStarted && showMainMenu ) {
+		UIVM_SetActiveMenu( UIMENU_NONE );
 	}
 
 	SCR_StopCinematic ();
@@ -1035,6 +1053,23 @@ void CL_Connect_f( void ) {
 }
 
 #define MAX_RCON_MESSAGE 1024
+
+/*
+==================
+CL_CompleteRcon
+==================
+*/
+static void CL_CompleteRcon( char *args, int argNum )
+{
+	if( argNum == 2 )
+	{
+		// Skip "rcon "
+		char *p = Com_SkipTokens( args, 1, " " );
+
+		if( p > args )
+			Field_CompleteCommand( p, qtrue, qtrue );
+	}
+}
 
 /*
 =====================
@@ -2088,10 +2123,10 @@ void CL_Frame ( int msec ) {
 									//	of course this still doesn't work for menus...
 
 	if ( cls.state == CA_DISCONNECTED && !( Key_GetCatcher( ) & KEYCATCH_UI )
-		&& !com_sv_running->integer && uivm ) {
+		&& !com_sv_running->integer && cls.uiStarted ) {
 		// if disconnected, bring up the menu
 		S_StopAllSounds();
-		VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_MAIN );
+		UIVM_SetActiveMenu( UIMENU_MAIN );
 	}
 
 	// if recording an avi, lock to a fixed fps
@@ -2222,16 +2257,20 @@ CL_ShutdownRef
 ============
 */
 void CL_ShutdownRef( void ) {
-	if ( !re.Shutdown ) {
-		return;
+	if ( re )
+	{
+		if ( re->Shutdown )
+		{
+			re->Shutdown( qtrue );
+		}
 	}
-	re.Shutdown( qtrue );
+
+	re = NULL;
 
 	if ( rendererLib != NULL ) {
 		Sys_UnloadDll (rendererLib);
 		rendererLib = NULL;
 	}
-	Com_Memset( &re, 0, sizeof( re ) );
 }
 
 /*
@@ -2241,15 +2280,15 @@ CL_InitRenderer
 */
 void CL_InitRenderer( void ) {
 	// this sets up the renderer and calls R_Init
-	re.BeginRegistration( &cls.glconfig );
+	re->BeginRegistration( &cls.glconfig );
 
 	// load character sets
-	cls.charSetShader = re.RegisterShaderNoMip("gfx/2d/charsgrid_med");
+	cls.charSetShader = re->RegisterShaderNoMip("gfx/2d/charsgrid_med");
 
-	cls.whiteShader = re.RegisterShader( "white" );
-	cls.consoleShader = re.RegisterShader( "console" );
+	cls.whiteShader = re->RegisterShader( "white" );
+	cls.consoleShader = re->RegisterShader( "console" );
 	g_console_field_width = cls.glconfig.vidWidth / SMALLCHAR_WIDTH - 2;
-	kg.g_consoleField.widthInChars = g_console_field_width;
+	g_consoleField.widthInChars = g_console_field_width;
 }
 
 /*
@@ -2299,8 +2338,6 @@ CL_InitRef
 */
 qboolean Com_TheHunkMarkHasBeenMade(void);
 
-//qcommon/vm.cpp
-extern vm_t *currentVM;
 #ifdef _WIN32
 	//win32/win_main.cpp
 	#include "win32/win_local.h"
@@ -2311,8 +2348,8 @@ extern void *gpvCachedMapDiskImage;
 extern qboolean gbUsingCachedMapDataRightNow;
 
 static char *GetSharedMemory( void ) { return cl.mSharedMemory; }
-static vm_t *GetCgameVM( void ) { return cgvm; }
 static vm_t *GetCurrentVM( void ) { return currentVM; }
+static qboolean CGVMLoaded( void ) { return (qboolean)cls.cgameStarted; }
 #ifdef _WIN32
 	static void *GetWinVars( void ) { return (void *)&g_wv; }
 #endif
@@ -2321,9 +2358,6 @@ static void CM_SetCachedMapDiskImage( void *ptr ) { gpvCachedMapDiskImage = ptr;
 static void CM_SetUsingCache( qboolean usingCache ) { gbUsingCachedMapDataRightNow = usingCache; }
 
 // for listen servers
-extern vm_t *currentVM;
-extern vm_t *gvm;
-static vm_t *GetGameVM( void ) { return gvm; }
 extern void SV_GetConfigstring( int index, char *buffer, int bufferSize );
 extern void SV_SetConfigstring( int index, const char *val );
 
@@ -2338,7 +2372,7 @@ static CMiniHeap *GetG2VertSpaceServer( void ) {
 #define DEFAULT_RENDER_LIBRARY "rd-vanilla"
 
 void CL_InitRef( void ) {
-	refimport_t	ri = {0};
+	static refimport_t ri;
 	refexport_t	*ret;
 	GetRefAPI_t	GetRefAPI;
 	char		dllName[MAX_OSPATH];
@@ -2361,6 +2395,9 @@ void CL_InitRef( void ) {
 	if ( !rendererLib ) {
 		Com_Error( ERR_FATAL, "Failed to load renderer" );
 	}
+
+	memset( &ri, 0, sizeof( ri ) );
+
 
 	GetRefAPI = (GetRefAPI_t)Sys_LoadFunction( rendererLib, "GetRefAPI" );
 	if ( !GetRefAPI )
@@ -2419,7 +2456,6 @@ void CL_InitRef( void ) {
 	ri.CM_LeafCluster = CM_LeafCluster;
 	ri.CM_PointLeafnum = CM_PointLeafnum;
 	ri.CM_PointContents = CM_PointContents;
-	ri.VM_Call = VM_Call;
 	ri.Com_TheHunkMarkHasBeenMade = Com_TheHunkMarkHasBeenMade;
 	ri.SV_GetConfigstring = SV_GetConfigstring;
 	ri.SV_SetConfigstring = SV_SetConfigstring;
@@ -2432,9 +2468,11 @@ void CL_InitRef( void ) {
 
 	// g2 data access
 	ri.GetSharedMemory = GetSharedMemory;
-	ri.GetCgameVM = GetCgameVM;
-	ri.GetGameVM = GetGameVM;
+
+	// (c)g vm callbacks
 	ri.GetCurrentVM = GetCurrentVM;
+	ri.CGVMLoaded = CGVMLoaded;
+	ri.CGVM_RagCallback = CGVM_RagCallback;
 
 	// ugly win32 backend
 #ifdef _WIN32
@@ -2465,7 +2503,7 @@ void CL_InitRef( void ) {
 		Com_Error (ERR_FATAL, "Couldn't initialize refresh" );
 	}
 
-	re = *ret;
+	re = ret;
 
 	// unpause so the cgame definately gets a snapshot and renders a frame
 	Cvar_Set( "cl_paused", "0" );
@@ -2755,6 +2793,7 @@ void CL_Init( void ) {
 	Cmd_AddCommand ("reconnect", CL_Reconnect_f);
 //	Cmd_AddCommand ("localservers", CL_LocalServers_f);
 	Cmd_AddCommand ("rcon", CL_Rcon_f);
+	Cmd_SetCommandCompletionFunc( "rcon", CL_CompleteRcon );
 	Cmd_AddCommand ("ping", CL_Ping_f );
 //	Cmd_AddCommand ("serverstatus", CL_ServerStatus_f );
 	Cmd_AddCommand ("showip", CL_ShowIP_f );
@@ -3039,7 +3078,7 @@ serverStatus_t *CL_GetServerStatus( netadr_t from ) {
 CL_ServerStatus
 ===================
 */
-int CL_ServerStatus( char *serverAddress, char *serverStatusString, int maxLen ) {
+int CL_ServerStatus( const char *serverAddress, char *serverStatusString, int maxLen ) {
 	int i;
 	netadr_t	to;
 	serverStatus_t *serverStatus;

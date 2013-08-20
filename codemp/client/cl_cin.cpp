@@ -17,6 +17,7 @@
  *****************************************************************************/
 
 #include "client.h"
+#include "cl_uiapi.h"
 #include "snd_local.h"
 #ifndef _WIN32
 #include <cmath>
@@ -1445,8 +1446,8 @@ int CIN_PlayCinematic( const char *arg, int x, int y, int w, int h, int systemBi
 
 	if (cinTable[currentHandle].alterGameState) {
 		// close the menu
-		if ( uivm ) {
-			VM_Call( uivm, UI_SET_ACTIVE_MENU, UIMENU_NONE );
+		if ( cls.uiStarted ) {
+			UIVM_SetActiveMenu( UIMENU_NONE );
 		}
 	} else {
 		cinTable[currentHandle].playonwalls = cl_inGameVideo->integer;
@@ -1583,13 +1584,13 @@ void CIN_DrawCinematic (int handle) {
 
 		CIN_ResampleCinematic(handle, buf2);
 
-		re.DrawStretchRaw( x, y, w, h, 256, 256, (byte *)buf2, handle, qtrue);
+		re->DrawStretchRaw( x, y, w, h, 256, 256, (byte *)buf2, handle, qtrue);
 		cinTable[handle].dirty = qfalse;
 		Hunk_FreeTempMemory(buf2);
 		return;
 	}
 
-	re.DrawStretchRaw( x, y, w, h, cinTable[handle].drawX, cinTable[handle].drawY, buf, handle, cinTable[handle].dirty);
+	re->DrawStretchRaw( x, y, w, h, cinTable[handle].drawX, cinTable[handle].drawY, buf, handle, cinTable[handle].dirty);
 	cinTable[handle].dirty = qfalse;
 }
 
@@ -1673,12 +1674,12 @@ void CIN_UploadCinematic(int handle) {
 
 			CIN_ResampleCinematic(handle, buf2);
 
-			re.UploadCinematic( 256, 256, (byte *)buf2, handle, qtrue);
+			re->UploadCinematic( 256, 256, (byte *)buf2, handle, qtrue);
 			cinTable[handle].dirty = qfalse;
 			Hunk_FreeTempMemory(buf2);
 		} else {
 			// Upload video at normal resolution
-			re.UploadCinematic( cinTable[handle].drawX, cinTable[handle].drawY,
+			re->UploadCinematic( cinTable[handle].drawX, cinTable[handle].drawY,
 					cinTable[handle].buf, handle, cinTable[handle].dirty);
 			cinTable[handle].dirty = qfalse;
 		}
