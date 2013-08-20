@@ -2443,6 +2443,26 @@ static void CG_Missile( centity_t *cent ) {
 		s1->weapon = 0;
 	}
 
+	// SpioR: smart gun
+	{
+		vec3_t missileVec;
+		vec_t a, b;
+		VectorNormalize2( s1->pos.trDelta, missileVec);
+		a = DotProduct(missileVec, cg.refdef.viewaxis[0]);
+		b = Distance(cent->lerpOrigin, cg.predictedPlayerState.origin);
+		if( cg_entities[cg.clientNum].firing &&
+			(cg.weaponSelect == WP_BRYAR_PISTOL || cg.weaponSelect == WP_BRYAR_OLD) &&
+			(s1->weapon == WP_BRYAR_PISTOL || s1->weapon == WP_BRYAR_OLD) &&
+			a > 0.9f &&
+			b < 128.0f)
+		{
+			int i=0;
+			while(cg_entities[cg.clientNum].projectiles[i] > 0) i++;
+			cg_entities[cg.clientNum].projectiles[i] = cent-cg_entities;
+			cg_entities[cg.clientNum].firing = qfalse;
+		}
+	}
+
 	if (cent->ghoul2 && s1->weapon == G2_MODEL_PART)
 	{
 		weapon = &cg_weapons[WP_SABER];

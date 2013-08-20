@@ -471,9 +471,9 @@ char *Sys_ConsoleInput( void )
 void Conbuf_AppendText( const char *pMsg )
 {
 #define CONSOLE_BUFFER_SIZE		16384
-	if ( !s_wcd.hWnd ) {
+	/*if ( !s_wcd.hWnd ) {
 		return;
-	}
+	}*/
 	char buffer[CONSOLE_BUFFER_SIZE*4];
 	char *b = buffer;
 	const char *msg;
@@ -533,6 +533,7 @@ void Conbuf_AppendText( const char *pMsg )
 
 	s_totalChars += bufLen;
 
+	/*
 	//
 	// replace selection instead of appending if we're overflowing
 	//
@@ -548,6 +549,8 @@ void Conbuf_AppendText( const char *pMsg )
 	SendMessage( s_wcd.hwndBuffer, EM_LINESCROLL, 0, 0xffff );
 	SendMessage( s_wcd.hwndBuffer, EM_SCROLLCARET, 0, 0 );
 	SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, 0, (LPARAM) buffer );
+	*/
+	printf(buffer);
 }
 
 /*

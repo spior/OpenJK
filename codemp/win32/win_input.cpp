@@ -837,7 +837,7 @@ void IN_Init( void ) {
 	joy_xbutton				= Cvar_Get ("joy_xbutton",			"1",		CVAR_ARCHIVE);	// treat axis as a button
 	joy_ybutton				= Cvar_Get ("joy_ybutton",			"0",		CVAR_ARCHIVE);
 
-	IN_Startup();
+//	IN_Startup();
 }
 
 

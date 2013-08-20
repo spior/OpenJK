@@ -163,4 +163,24 @@ XCVAR_DEF( ui_tm2_c4_cnt,						"0",					NULL,					CVAR_ROM|CVAR_INTERNAL )
 XCVAR_DEF( ui_tm2_c5_cnt,						"0",					NULL,					CVAR_ROM|CVAR_INTERNAL )
 XCVAR_DEF( ui_tm2_cnt,							"0",					NULL,					CVAR_ROM|CVAR_INTERNAL )
 XCVAR_DEF( ui_tm3_cnt,							"0",					NULL,					CVAR_ROM|CVAR_INTERNAL )
+// SpioR: cvars
+XCVAR_DEF( mm_Silent,							"0",					NULL,					CVAR_ARCHIVE )
+
+// Smart Gun
+XCVAR_DEF( mm_SmartGun,							"0",					NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_SmartGunCmd,						"mtele $xyz$",			NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_SmartGunAltCmd,					"mmark $xyz$",			NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_SmartGunCmdCl,					"mslap $cl$",			NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_SmartGunAltCmdCl,					"mkick $cl$",			NULL,					CVAR_ARCHIVE )
+
+// Wallhack
+XCVAR_DEF( mm_WallHack,							"0",					NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_WallHackESP,						"0",					NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_WallHackLight,					"1",					NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_WallHackR,						"255",					NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_WallHackG,						"0",					NULL,					CVAR_ARCHIVE )
+XCVAR_DEF( mm_WallHackB,						"255",					NULL,					CVAR_ARCHIVE )
+
+// Chat Box
+XCVAR_DEF( mm_OldChat,							"0",					NULL,					CVAR_ARCHIVE )
 #undef XCVAR_DEF

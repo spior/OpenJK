@@ -11111,6 +11111,39 @@ endOfCall:
 		cgBoneAnglePostSet.refreshSet = qfalse;
 	}
 #endif
+	// SpioR: wallhack
+	if (mm_WallHack.integer)
+	{
+		if(clientNum != cg.clientNum)
+		{
+			if(mm_WallHackESP.integer)
+				legs.renderfx |= RF_MINLIGHT | RF_NODEPTH | RF_DEPTHHACK | RF_WRAP_FRAMES;
+			if(mm_WallHackLight.integer)
+			{
+				legs.renderfx &= ~RF_RGB_TINT;
+				legs.renderfx &= ~RF_FORCE_ENT_ALPHA;
+				legs.customShader = cgs.media.playerShieldDamage;
+				legs.shaderRGBA[0] = mm_WallHackR.integer;
+				legs.shaderRGBA[1] = mm_WallHackG.integer;
+				legs.shaderRGBA[2] = mm_WallHackB.integer;
+				trap_R_AddLightToScene( legs.origin, 100.0, 0.0, 1.0, 1.0 );
+			}
+			if(mm_WallHackESP.integer)
+				legs.renderfx |= RF_MINLIGHT | RF_NODEPTH | RF_DEPTHHACK | RF_WRAP_FRAMES;
+			if(mm_WallHackLight.integer)
+			{
+				torso.renderfx &= ~RF_RGB_TINT;
+				torso.renderfx &= ~RF_FORCE_ENT_ALPHA;
+				torso.customShader = cgs.media.playerShieldDamage;
+				torso.shaderRGBA[0] = mm_WallHackR.integer;
+				torso.shaderRGBA[1] = mm_WallHackB.integer;
+				torso.shaderRGBA[2] = mm_WallHackG.integer;
+				trap_R_AddLightToScene( torso.origin, 100.0, 0.0, 1.0, 1.0 );
+			}
+			trap_R_AddRefEntityToScene( &legs );
+			trap_R_AddRefEntityToScene( &torso );
+		}
+	}
 }
 
 
@@ -11273,6 +11306,8 @@ void CG_ResetPlayerEntity( centity_t *cent )
 		}
 	}
 
+	// SpioR: initialize variables
+	cent->health = 100;
 
 	if ( cg_debugPosition.integer ) {
 		CG_Printf("%i ResetPlayerEntity yaw=%i\n", cent->currentState.number, cent->pe.torso.yawAngle );

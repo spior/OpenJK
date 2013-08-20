@@ -163,6 +163,7 @@ vmMain
 
 This is the only way control passes into the module.
 This must be the very first function compiled into the .q3vm file
+SpioR: proxied
 ================
 */
 intptr_t VMP ( int n ) { return (intptr_t)n; }
@@ -171,14 +172,17 @@ Q_EXPORT intptr_t vmMain( int command, int arg0, int arg1, int arg2, int arg3, i
 	switch ( command ) {
 	case CG_INIT:
 		CG_Init( arg0, arg1, arg2 );
+		MM_Init();
 		return 0;
 	case CG_SHUTDOWN:
 		CG_Shutdown();
+		MM_Shutdown();
 		return 0;
 	case CG_CONSOLE_COMMAND:
 		return CG_ConsoleCommand();
 	case CG_DRAW_ACTIVE_FRAME:
 		CG_DrawActiveFrame( arg0, arg1, arg2 );
+		MM_DrawActiveFrame();
 		return 0;
 	case CG_CROSSHAIR_PLAYER:
 		return CG_CrosshairPlayer();

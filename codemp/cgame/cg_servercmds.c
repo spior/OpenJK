@@ -1309,7 +1309,7 @@ void CG_ParseSiegeExtendedData(void);
 extern void CG_ChatBox_AddString(char *chatStr); //cg_draw.c
 static void CG_ServerCommand( void ) {
 	const char	*cmd;
-	char		text[MAX_SAY_TEXT];
+	char		text[MAX_SAY_TEXT+20]; // SpioR: 20 for timestamp
 	qboolean	IRCG = qfalse;
 
 	cmd = CG_Argv(0);
@@ -1601,18 +1601,28 @@ static void CG_ServerCommand( void ) {
 		return;
 	}
 
-	if ( !strcmp( cmd, "chat" ) ) {
-		if ( !cg_teamChatsOnly.integer ) {
-			trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
+	// SpioR: chat edits
+	if ((!strcmp(cmd, "chat") && !cg_teamChatsOnly.integer) ||
+		!strcmp(cmd, "tchat"))
+	{
+		if(!mm_OldChat.integer)
+		{
+			time_t t = time(NULL);
+			struct tm* ti = localtime(&t);
+			Com_sprintf(text, sizeof(text), "[^5%02i:%02i:%02i^7] %s", ti->tm_hour, ti->tm_min, ti->tm_sec, CG_Argv(1));
+		}
+		else
+		{
 			Q_strncpyz( text, CG_Argv(1), MAX_SAY_TEXT );
 			CG_RemoveChatEscapeChar( text );
-			CG_ChatBox_AddString(text);
 			CG_Printf( "*%s\n", text );
 		}
+		trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
+		CG_ChatBox_AddString(text);
 		return;
 	}
 
-	if ( !strcmp( cmd, "tchat" ) ) {
+	/*if ( !strcmp( cmd, "tchat" ) ) {
 		trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
 		Q_strncpyz( text, CG_Argv(1), MAX_SAY_TEXT );
 		CG_RemoveChatEscapeChar( text );
@@ -1620,7 +1630,7 @@ static void CG_ServerCommand( void ) {
 		CG_Printf( "*%s\n", text );
 
 		return;
-	}
+	}*/
 
 	//chat with location, possibly localized.
 	if ( !strcmp( cmd, "lchat" ) ) {

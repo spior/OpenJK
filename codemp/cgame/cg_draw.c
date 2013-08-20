@@ -115,7 +115,7 @@ int MenuFontToHandle(int iMenuFont)
 }
 
 
-int CG_Text_Width(const char *text, float scale, int iMenuFont) 
+float CG_Text_Width(const char *text, float scale, int iMenuFont) 
 {
 	int iFontIndex = MenuFontToHandle(iMenuFont);
 
@@ -7481,6 +7481,31 @@ void CG_ChatBox_AddString(char *chatStr)
 		return;
 	}
 
+	// SpioR: new chatbox
+	if (!mm_OldChat.integer)
+	{
+		char time[64] = { 0 };
+		char name[64] = { 0 };
+		strncpy(time, chatStr, (strchr(chatStr, ' ')-chatStr));
+		chatStr+=strlen(time)+1;
+		if(*chatStr == '\x19')
+		{ // pm
+				chatStr+=2;
+				strncpy(name, chatStr, (strchr(chatStr, '\x19')-chatStr));
+				strncpy(name, va("> %s", name), sizeof(name));
+				//chatStr++;
+		}
+		else
+			if(strchr(chatStr, '\x19'))
+				strncpy(name, chatStr, (strchr(chatStr, '\x19')-chatStr));
+
+		if(name[0])
+			chatStr+=strlen(name)+1;
+		MM_ChatBox_AddString(time, name, chatStr);
+		// Should just let it add them, I mean why not? The memory is allocated anyway :d
+		//return;
+	}
+
 	memset(chat, 0, sizeof(chatBoxItem_t));
 
 	if (strlen(chatStr) > sizeof(chat->string))
@@ -7595,6 +7620,13 @@ static CGAME_INLINE void CG_ChatBox_DrawStrings(void)
 			linesToDraw += cg.chatItems[i].lines;
 		}
 		i++;
+	}
+
+	// SpioR: new chatbox
+	if (!mm_OldChat.integer)
+	{
+		MM_ChatBox_DrawStrings();
+		return;
 	}
 
 	if (!numToDraw)
@@ -8079,6 +8111,43 @@ static void CG_Draw2D( void ) {
 		CG_DrawIntermission();
 		CG_ChatBox_DrawStrings();
 		return;
+	}
+
+	// SpioR: health bars
+	if ( cg_draw2D.integer )
+	{
+		int i;
+		for(i=0; i<MAX_CLIENTS; i++)
+		{
+			if (cgs.clientinfo[i].infoValid && i != cg.clientNum)
+			{
+				centity_t		*cent = &cg_entities[i];
+				float			health_x, health_y, factor, ratio;
+				vec3_t			vec1, vec2;
+				int				length;
+				//MM_DrawHealthBars( cent );
+
+				VectorSubtract(cg.predictedPlayerState.origin, cent->currentState.pos.trBase, vec2);
+
+				if( vec2[0] > 1000.0f || vec2[1] > 1000.0f || vec2[2] > 1000.0f ||
+					vec2[0] < -1000.0f || vec2[1] < -1000.0f || vec2[2] < -1000.0f )
+					continue;
+
+				VectorSubtract(cent->currentState.pos.trBase, cg.predictedPlayerState.origin, vec1);
+				length = VectorLength(vec1);
+				length = min(length, 300);
+
+				factor = max(0.15, 1.0f - ( length / 300 ));
+
+				CG_WorldCoordToScreenCoordFloat(cent->currentState.pos.trBase, &health_x, &health_y);
+				health_x -= 25;
+				health_y -= 150.0f * factor;
+				if(VectorCompare(cent->currentState.pos.trBase, cg.predictedPlayerState.origin))
+					continue;
+				ratio = (float)cent->health / 100.0;
+				CG_DrawHealthBarRough(health_x, health_y, HEALTH_WIDTH, HEALTH_HEIGHT-1.0f, ratio, colorTable[CT_YELLOW], colorTable[CT_BLACK]);
+			}
+		}
 	}
 
 	CG_Draw2DScreenTints();

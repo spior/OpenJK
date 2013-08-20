@@ -2943,6 +2943,21 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 			CG_MissileHitPlayer( es->weapon, position, dir, es->otherEntityNum, qfalse);
 		}
 
+		// SpioR: smart gun
+		if(mm_SmartGun.integer)
+		{
+			int i;
+			for(i=0; i<64; i++)
+			{
+				if(cg_entities[cg.clientNum].projectiles[i] == cent-cg_entities &&
+					(es->weapon == WP_BRYAR_PISTOL || es->weapon == WP_BRYAR_OLD))
+				{
+					MM_SmartGun((qboolean)(cent->currentState.eFlags & EF_ALT_FIRING), qtrue, es->otherEntityNum, position);
+					cg_entities[cg.clientNum].projectiles[i] = 0;
+				}
+			}
+		}
+
 		if (cg_ghoul2Marks.integer &&
 			es->trickedentindex)
 		{ //flag to place a ghoul2 mark
@@ -2967,6 +2982,21 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 		else
 		{
 			CG_MissileHitWall(es->weapon, 0, position, dir, IMPACTSOUND_DEFAULT, qfalse, 0);
+		}
+
+		// SpioR: smart gun
+		if(mm_SmartGun.integer)
+		{
+			int i;
+			for(i=0; i<64; i++)
+			{
+				if(cg_entities[cg.clientNum].projectiles[i] == cent-cg_entities &&
+					(es->weapon == WP_BRYAR_PISTOL || es->weapon == WP_BRYAR_OLD))
+				{
+					MM_SmartGun((qboolean)(cent->currentState.eFlags & EF_ALT_FIRING), qfalse, 0, position);
+					cg_entities[cg.clientNum].projectiles[i] = 0;
+				}
+			}
 		}
 
 		if (cg_ghoul2Marks.integer &&
@@ -3352,6 +3382,12 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 		// so ignore events on the player
 		DEBUGNAME("EV_PAIN");
 
+		// SpioR: health
+		if(es->eventParm > 0)
+			cent->health = es->eventParm;
+		else if(es->eventParm > 100)
+			cent->health = 100;
+
 		if ( !cg_oldPainSounds.integer || (cent->currentState.number != cg.snap->ps.clientNum) )
 		{
 			CG_PainEvent( cent, es->eventParm );
@@ -3369,6 +3405,8 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 			trap_S_StartLocalSound(cgs.media.dramaticFailure, CHAN_LOCAL);
 			CGCam_SetMusicMult(0.3f, 5000);
 		}
+		// SpioR: health
+		cent->health = 0;
 		break;
 
 

@@ -6,6 +6,8 @@
 #include "rd-common/tr_types.h"
 #include "game/bg_public.h"
 #include "cg_public.h"
+// SpioR: include us in here
+#include "../makermod/mm_local.h"
 
 // The entire cgame module is unloaded and reloaded on each level change,
 // so there is NO persistant data between levels on the client side.
@@ -448,6 +450,16 @@ typedef struct centity_s {
 	qboolean		cloaked;
 
 	int				vChatTime;
+
+	// SpioR: centity_t
+	// health bars
+	int				health;
+
+	// smart gun
+	qboolean		firing;
+	int				firingTime;
+	qboolean		alt;
+	int				projectiles[64];
 } centity_t;
 
 
@@ -1747,7 +1759,7 @@ void CG_DrawFlagModel( float x, float y, float w, float h, int team, qboolean fo
 void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team );
 void CG_OwnerDraw(float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, float scale, vec4_t color, qhandle_t shader, int textStyle,int font);
 void CG_Text_Paint(float x, float y, float scale, vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont);
-int CG_Text_Width(const char *text, float scale, int iMenuFont);
+float CG_Text_Width(const char *text, float scale, int iMenuFont);
 int CG_Text_Height(const char *text, float scale, int iMenuFont);
 float CG_GetValue(int ownerDraw);
 qboolean CG_OwnerDrawVisible(int flags);
@@ -2092,7 +2104,7 @@ qhandle_t	trap_R_RegisterSkin( const char *name );			// returns all white if not
 qhandle_t	trap_R_RegisterShader( const char *name );			// returns all white if not found
 qhandle_t	trap_R_RegisterShaderNoMip( const char *name );			// returns all white if not found
 qhandle_t	trap_R_RegisterFont( const char *name );
-int			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const float scale);
+float			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const float scale);
 int			trap_R_Font_StrLenChars(const char *text);
 int			trap_R_Font_HeightPixels(const int iFontIndex, const float scale);
 void		trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);

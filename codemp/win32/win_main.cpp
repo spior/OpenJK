@@ -1034,7 +1034,7 @@ void Sys_Init( void ) {
 	// NT gets 18ms resolution
 	timeBeginPeriod( 1 );
 
-	Cmd_AddCommand ("in_restart", Sys_In_Restart_f);
+//	Cmd_AddCommand ("in_restart", Sys_In_Restart_f);
 	Cmd_AddCommand ("net_restart", Sys_Net_Restart_f);
 
 	g_wv.osversion.dwOSVersionInfoSize = sizeof( g_wv.osversion );
@@ -1072,8 +1072,8 @@ void Sys_Init( void ) {
 	}
 
 	// save out a couple things in rom cvars for the renderer to access
-	Cvar_Get( "win_hinstance", va("%i", (int)g_wv.hInstance), CVAR_ROM );
-	Cvar_Get( "win_wndproc", va("%i", (int)MainWndProc), CVAR_ROM );
+//	Cvar_Get( "win_hinstance", va("%i", (int)g_wv.hInstance), CVAR_ROM );
+//	Cvar_Get( "win_wndproc", va("%i", (int)MainWndProc), CVAR_ROM );
 
 	Cvar_Set( "username", Sys_GetCurrentUser() );
 
@@ -1214,7 +1214,7 @@ int main( int argc, char **argv )
 	int		i;
 	char	commandLine[ MAX_STRING_CHARS ] = { 0 };
 
-	Sys_CreateConsole();
+//	Sys_CreateConsole();
 
 	// no abort/retry/fail errors
 	SetErrorMode( SEM_FAILCRITICALERRORS );
@@ -1271,7 +1271,7 @@ int main( int argc, char **argv )
 #endif // _DEBUG
 
 		// make sure mouse and joystick are only called once a frame
-		IN_Frame();
+//		IN_Frame();
 
 		// run the game
 		Com_Frame();

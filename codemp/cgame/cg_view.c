@@ -2829,5 +2829,9 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	if ( cg_stats.integer ) {
 		CG_Printf( "cg.clientFrame:%i\n", cg.clientFrame );
 	}
+
+	// SpioR: smart gun
+	if(cg_entities[cg.clientNum].firing && cg_entities[cg.clientNum].firingTime > cg.time + 5000)
+		cg_entities[cg.clientNum].firing = qfalse;
 }
 

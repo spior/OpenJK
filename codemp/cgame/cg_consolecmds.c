@@ -338,6 +338,19 @@ static consoleCommand_t	commands[] = {
 	{ "siegeCvarUpdate", CG_SiegeCvarUpdate_f },
 	{ "siegeCompleteCvarUpdate", CG_SiegeCompleteCvarUpdate_f },
 	{ "clientlist", CG_ClientList_f },
+	// SpioR: commands
+	{ "telet",			CG_Telet_f },
+	{ "markt",			CG_Markt_f },
+	{ "destt",			CG_Destt_f },
+	{ "markoffset",		CG_MarkOffset_f },
+	{ "marktoffset",	CG_MarktOffset_f },
+	{ "marksky",		CG_MarkSky_f },
+	{ "markskyoffset",	CG_MarkSky_f },
+	{ "markob",			CG_MarkOB_f },
+	{ "rotatet",		CG_Rotatet_f },
+	{ "movet",			CG_Movet_f },
+/*	{ "say_irc",		CG_IRC_Say_f },
+	{ "messageMode5",	Con_MessageMode_f },*/
 };
 
 static size_t numCommands = ARRAY_LEN( commands );

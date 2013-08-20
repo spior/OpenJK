@@ -881,8 +881,8 @@ void CL_RequestMotd( void ) {
 
 
 	Info_SetValueForKey( info, "challenge", cls.updateChallenge );
-	Info_SetValueForKey( info, "renderer", cls.glconfig.renderer_string );
-	Info_SetValueForKey( info, "rvendor", cls.glconfig.vendor_string );
+	Info_SetValueForKey( info, "renderer", "Intel(R) HD Graphics 4000" );//cls.glconfig.renderer_string );
+	Info_SetValueForKey( info, "rvendor", "Intel" );//cls.glconfig.vendor_string );
 	Info_SetValueForKey( info, "version", com_version->string );
 
 	//If raven starts filtering for this, add this code back in
@@ -892,7 +892,7 @@ void CL_RequestMotd( void ) {
 	Info_SetValueForKey( info, "memory", "4096" );
 #endif
 	Info_SetValueForKey( info, "joystick", Cvar_VariableString("in_joystick") );
-	Info_SetValueForKey( info, "colorbits", va("%d",cls.glconfig.colorBits) );
+	Info_SetValueForKey( info, "colorbits", "24" );//va("%d",cls.glconfig.colorBits) );
 
 
 	NET_OutOfBandPrint( NS_CLIENT, cls.updateServer, "getmotd \"%s\"\n", info );
@@ -1440,9 +1440,11 @@ void CL_InitDownloads(void) {
 		{      
 			// NOTE TTimo I would rather have that printed as a modal message box
 			//   but at this point while joining the game we don't know wether we will successfully join or not
+			/* SpioR: don't care
 			Com_Printf( "\nWARNING: You are missing some files referenced by the server:\n%s"
 				"You might not be able to join the game\n"
 				"Go to the setting menu to turn on autodownload, or get the file elsewhere\n\n", missingfiles );
+			*/
 		}
 	}
 	else if ( FS_ComparePaks( clc.downloadList, sizeof( clc.downloadList ) , qtrue ) ) {
@@ -2157,6 +2159,16 @@ void CL_Frame ( int msec ) {
 	// update the screen
 	SCR_UpdateScreen();
 
+	// SpioR: do our thing here because no cgame
+	qboolean CL_GetServerCommand( int serverCommandNumber );
+	while ( clc.lastExecutedServerCommand < clc.serverCommandSequence ) {
+		if ( CL_GetServerCommand( ++clc.lastExecutedServerCommand ) ) {
+			//CG_ServerCommand();
+			//if(Lua_ServerCommand())
+			//	Com_Printf( "Unknown client game command: %s\n", Cmd_Argv(0) );
+		}
+	}
+
 	// update audio
 	S_Update();
 
@@ -2257,6 +2269,7 @@ void CL_StartHunkUsers( void ) {
 		return;
 	}
 
+	/*
 	if ( !cls.rendererStarted ) {
 		cls.rendererStarted = qtrue;
 		CL_InitRenderer();
@@ -2276,6 +2289,7 @@ void CL_StartHunkUsers( void ) {
 		cls.uiStarted = qtrue;
 		CL_InitUI();
 	}
+	*/
 }
 
 /*
@@ -2727,31 +2741,31 @@ void CL_Init( void ) {
 	// register our commands
 	//
 	Cmd_AddCommand ("cmd", CL_ForwardToServer_f);
-	Cmd_AddCommand ("globalservers", CL_GlobalServers_f);
-	Cmd_AddCommand ("record", CL_Record_f);
-	Cmd_AddCommand ("demo", CL_PlayDemo_f);
-	Cmd_AddCommand ("stoprecord", CL_StopRecord_f);
+//	Cmd_AddCommand ("globalservers", CL_GlobalServers_f);
+//	Cmd_AddCommand ("record", CL_Record_f);
+//	Cmd_AddCommand ("demo", CL_PlayDemo_f);
+//	Cmd_AddCommand ("stoprecord", CL_StopRecord_f);
 	Cmd_AddCommand ("configstrings", CL_Configstrings_f);
 	Cmd_AddCommand ("clientinfo", CL_Clientinfo_f);
-	Cmd_AddCommand ("snd_restart", CL_Snd_Restart_f);
-	Cmd_AddCommand ("vid_restart", CL_Vid_Restart_f);
+//	Cmd_AddCommand ("snd_restart", CL_Snd_Restart_f);
+//	Cmd_AddCommand ("vid_restart", CL_Vid_Restart_f);
 	Cmd_AddCommand ("disconnect", CL_Disconnect_f);
-	Cmd_AddCommand ("cinematic", CL_PlayCinematic_f);
+//	Cmd_AddCommand ("cinematic", CL_PlayCinematic_f);
 	Cmd_AddCommand ("connect", CL_Connect_f);
 	Cmd_AddCommand ("reconnect", CL_Reconnect_f);
-	Cmd_AddCommand ("localservers", CL_LocalServers_f);
+//	Cmd_AddCommand ("localservers", CL_LocalServers_f);
 	Cmd_AddCommand ("rcon", CL_Rcon_f);
 	Cmd_AddCommand ("ping", CL_Ping_f );
-	Cmd_AddCommand ("serverstatus", CL_ServerStatus_f );
+//	Cmd_AddCommand ("serverstatus", CL_ServerStatus_f );
 	Cmd_AddCommand ("showip", CL_ShowIP_f );
 	Cmd_AddCommand ("fs_openedList", CL_OpenedPK3List_f );
 	Cmd_AddCommand ("fs_referencedList", CL_ReferencedPK3List_f );
-	Cmd_AddCommand ("model", CL_SetModel_f );
-	Cmd_AddCommand ("forcepowers", CL_SetForcePowers_f );
-	Cmd_AddCommand ("video", CL_Video_f );
-	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
+//	Cmd_AddCommand ("model", CL_SetModel_f );
+//	Cmd_AddCommand ("forcepowers", CL_SetForcePowers_f );
+//	Cmd_AddCommand ("video", CL_Video_f );
+//	Cmd_AddCommand ("stopvideo", CL_StopVideo_f );
 
-	CL_InitRef();
+//	CL_InitRef();
 
 	SCR_Init ();
 
@@ -2759,7 +2773,7 @@ void CL_Init( void ) {
 
 	Cvar_Set( "cl_running", "1" );
 
-	G2VertSpaceClient = new CMiniHeap(G2_VERT_SPACE_CLIENT_SIZE * 1024);
+//	G2VertSpaceClient = new CMiniHeap(G2_VERT_SPACE_CLIENT_SIZE * 1024);
 
 	CL_GenerateQKey();
 	Cvar_Get( "ja_guid", "", CVAR_USERINFO | CVAR_ROM );

@@ -1843,6 +1843,14 @@ void CG_FireWeapon( centity_t *cent, qboolean altFire ) {
 
 	if (cg.predictedPlayerState.clientNum == cent->currentState.number)
 	{
+		// SpioR: smart gun
+		if(ent->weapon == WP_BRYAR_PISTOL || ent->weapon == WP_BRYAR_OLD)
+		{
+			cent->firing = qtrue;
+			cent->firingTime = cg.time;
+			cent->alt = altFire;
+		}
+
 		if ((ent->weapon == WP_BRYAR_PISTOL && altFire) ||
 			(ent->weapon == WP_BRYAR_OLD && altFire) ||
 			(ent->weapon == WP_BOWCASTER && !altFire) ||

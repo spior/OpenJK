@@ -492,6 +492,15 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 		*ops = *ps;
 	}
 
+	// SpioR: join message
+	if ( ps->persistant[PERS_TEAM] != TEAM_SPECTATOR && ops->persistant[PERS_TEAM] == TEAM_SPECTATOR )
+	{
+		if(!mm_Silent.integer )
+			trap_SendConsoleCommand( "say \""VERSION"\"\n" );
+		else
+			trap_SendConsoleCommand( va( "tell %i \""VERSION"\"\n", cg.clientNum ) );
+	}
+
 	// damage events (player is getting wounded)
 	if ( ps->damageEvent != ops->damageEvent && ps->damageCount ) {
 		CG_DamageFeedback( ps->damageYaw, ps->damagePitch, ps->damageCount );

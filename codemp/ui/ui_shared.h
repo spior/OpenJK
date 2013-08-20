@@ -530,7 +530,7 @@ int			trap_PC_SourceFileAndLine		( int handle, char *filename, int *line );
 int			trap_PC_LoadGlobalDefines		( const char* filename );
 void		trap_PC_RemoveAllGlobalDefines	( void );
 
-int			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const float scale);
+float			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const float scale);
 int			trap_R_Font_StrLenChars(const char *text);
 int			trap_R_Font_HeightPixels(const int iFontIndex, const float scale);
 void		trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);

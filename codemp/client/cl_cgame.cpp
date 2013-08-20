@@ -429,6 +429,25 @@ void CL_CheckSVStringEdRef(char *buf, const char *str)
 
 	buf[b] = 0;
 }
+
+// SpioR: hue
+/*
+=================
+CL_RemoveChatEscapeChar
+=================
+*/
+static void CL_RemoveChatEscapeChar( char *text ) {
+	int i, l;
+
+	l = 0;
+	for ( i = 0; text[i]; i++ ) {
+		if (text[i] == '\x19')
+			continue;
+		text[l++] = text[i];
+	}
+	text[l] = '\0';
+}
+
 /*
 ===================
 CL_GetServerCommand
@@ -547,6 +566,99 @@ rescan:
 	// we may want to put a "connect to other server" command here
 
 	// cgame can now act on the command
+/*
+	return qtrue;
+}
+
+static void CG_ServerCommand( void ) {
+*/
+	char		text[MAX_SAY_TEXT];
+
+	if (
+		!strcmp(cmd, "sxd")		||	//siege extended data, contains extra info certain classes may want to know about other clients
+		!strcmp(cmd, "sb")		||	//siege briefing display
+		!strcmp( cmd, "scl" )	||
+		!strcmp( cmd, "spc" )	||
+		!strcmp( cmd, "nfr" )	||	//"nfr" == "new force rank" (want a short string)
+		!strcmp( cmd, "kg2" )	||	//Kill a ghoul2 instance in this slot.
+									//If it has been occupied since this message was sent somehow, the worst that can (should) happen
+									//is the instance will have to reinit with its current info.
+		!strcmp(cmd, "kls")		||	//kill looping sounds
+		!strcmp(cmd, "ircg")	||	//this means param 2 is the body index and we want to copy to bodyqueue on it
+		!strcmp(cmd, "rcg")		||	//rcg - Restore Client Ghoul (make sure limbs are reattached and ragdoll state is reset - this must be done reliably)
+		!strcmp(cmd, "scores")	||
+		!strcmp(cmd, "tinfo")	||
+		!strcmp(cmd, "map_restart")	||
+		!strcmp(cmd, "remapShader")	||
+		!strcmp(cmd, "loaddefered")
+		)
+	{
+		return qfalse;
+	}
+
+	if ( !strcmp( cmd, "cp" ) ) {
+		//CL_CenterPrint( Cmd_Argv(1) );
+
+		//CON_CenterPrint(7, Cmd_Argv(1));
+		return qfalse;
+	}
+
+	if ( !strcmp( cmd, "cps" ) ) {
+		char *x = (char *)Cmd_Argv(1);
+		if (x[0] == '@')
+		{
+			x++;
+		}
+		//CL_CenterPrint( Cmd_Argv(1), SCREEN_HEIGHT * 0.30, BIGCHAR_WIDTH );
+		//CON_Printf(Cmd_Argv(1), printf, BACKGROUND_INTENSITY);
+
+		//CON_CenterPrint(7, Cmd_Argv(1));
+		return qfalse;
+	}
+
+	if ( !strcmp( cmd, "print" ) ) {
+		Com_Printf( "%s", Cmd_Argv(1) );
+		return qfalse;
+	}
+
+#ifndef LUA_VERSION	
+	if (	!strcmp( cmd, "chat" ) 
+		||	!strcmp( cmd, "tchat" )) {
+		time_t	derp = time(NULL);
+		struct tm *lt = localtime(&derp);
+		Q_strncpyz( text, Cmd_Argv(1), MAX_SAY_TEXT );
+		CL_RemoveChatEscapeChar( text );
+		Com_Printf( "[^5%02i:%02i:%02i^7] %s\n", lt->tm_hour, lt->tm_min, lt->tm_sec, text );
+		return qfalse;
+	}
+#endif
+
+	//chat with location, possibly localized.
+	if (	!strcmp( cmd, "lchat" ) 
+		||	!strcmp( cmd, "ltchat" )) {
+		char name[MAX_STRING_CHARS];
+		char loc[MAX_STRING_CHARS];
+		char color[8];
+		char message[MAX_STRING_CHARS];
+
+		if (Cmd_Argc() < 4)
+		{
+			return qtrue;
+		}
+
+		strcpy(name, Cmd_Argv(1));
+		strcpy(loc, Cmd_Argv(2));
+		strcpy(color, Cmd_Argv(3));
+		strcpy(message, Cmd_Argv(4));
+
+		Q_strncpyz( text, Cmd_Argv(1), MAX_SAY_TEXT );
+		Com_sprintf(text, MAX_SAY_TEXT, "%s<%s>^%s%s", name, loc, color, message);
+		CL_RemoveChatEscapeChar( text );
+		Com_Printf( "%s\n", text );
+		return qfalse;
+	}
+
+	//Com_Printf( "Unknown client game command: %s\n", cmd );
 	return qtrue;
 }
 
@@ -1737,16 +1849,16 @@ void CL_InitCGame( void ) {
 	else {
 		interpret = (vmInterpret_t)(int)Cvar_VariableValue( "vm_cgame" );
 	}
-	cgvm = VM_Create( "cgame", CL_CgameSystemCalls, interpret );
-	if ( !cgvm ) {
-		Com_Error( ERR_DROP, "VM_Create on cgame failed" );
-	}
+//	cgvm = VM_Create( "cgame", CL_CgameSystemCalls, interpret );
+//	if ( !cgvm ) {
+//		Com_Error( ERR_DROP, "VM_Create on cgame failed" );
+//	}
 	cls.state = CA_LOADING;
 
 	// init for this gamestate
 	// use the lastExecutedServerCommand instead of the serverCommandSequence
 	// otherwise server commands sent just before a gamestate are dropped
-	VM_Call( cgvm, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum );
+//	VM_Call( cgvm, CG_INIT, clc.serverMessageSequence, clc.lastExecutedServerCommand, clc.clientNum );
 
 	// reset any CVAR_CHEAT cvars registered by cgame
 	if ( !clc.demoplaying && !cl_connectedToCheatServer )
@@ -1762,7 +1874,7 @@ void CL_InitCGame( void ) {
 
 	// have the renderer touch all its images, so they are present
 	// on the card even if the driver does deferred loading
-	re.EndRegistration();
+//	re.EndRegistration();
 
 	// make sure everything is paged in
 //	if (!Sys_LowPhysicalMemory()) 
@@ -1897,7 +2009,7 @@ void CL_FirstSnapshot( void ) {
 		return;
 	}
 
-	re.RegisterMedia_LevelLoadEnd();
+//	re.RegisterMedia_LevelLoadEnd();
 
 	cls.state = CA_ACTIVE;
 
