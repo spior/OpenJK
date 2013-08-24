@@ -662,7 +662,7 @@ void Console_Key( int key ) {
 		Com_Printf( "%c%s\n", CONSOLE_PROMPT_CHAR, g_consoleField.buffer );
 
 		// check if cgame wants to eat the command...?
-		if ( cls.cgameStarted && cl.mSharedMemory ) {
+		/*if ( cls.cgameStarted && cl.mSharedMemory ) {
 			TCGIncomingConsoleCommand *icc = (TCGIncomingConsoleCommand *)cl.mSharedMemory;
 
 			Q_strncpyz( icc->conCommand, g_consoleField.buffer, sizeof( icc->conCommand ) );
@@ -678,7 +678,7 @@ void Console_Key( int key ) {
 				Cbuf_AddText( "\n" );
 			}
 		}
-		else {
+		else*/ {
 			// cgame didn't eat it, execute it
 			Cbuf_AddText( g_consoleField.buffer );
 			Cbuf_AddText( "\n" );
@@ -1285,22 +1285,22 @@ void CL_KeyEvent( int key, qboolean down, unsigned time ) {
 		// escape always gets out of CGAME stuff
 		if (Key_GetCatcher() & KEYCATCH_CGAME) {
 			Key_SetCatcher( Key_GetCatcher( ) & ~KEYCATCH_CGAME );
-			CGVM_EventHandling( CGAME_EVENT_NONE );
+//			CGVM_EventHandling( CGAME_EVENT_NONE );
 			return;
 		}
 
 		if ( !(Key_GetCatcher() & KEYCATCH_UI) ) {
-			if ( cls.state == CA_ACTIVE && !clc.demoplaying )
-				UIVM_SetActiveMenu( UIMENU_INGAME );
+			if ( cls.state == CA_ACTIVE && !clc.demoplaying ) {}
+//				UIVM_SetActiveMenu( UIMENU_INGAME );
 			else {
 				CL_Disconnect_f();
-				S_StopAllSounds();
-				UIVM_SetActiveMenu( UIMENU_MAIN );
+//				S_StopAllSounds();
+//				UIVM_SetActiveMenu( UIMENU_MAIN );
 			}
 			return;
 		}
 
-		UIVM_KeyEvent( key, down );
+//		UIVM_KeyEvent( key, down );
 		return;
 	}
 
@@ -1315,10 +1315,10 @@ void CL_KeyEvent( int key, qboolean down, unsigned time ) {
 
 		CL_AddKeyUpCommands( key, kb );
 
-		if ( (Key_GetCatcher() & KEYCATCH_UI) && cls.uiStarted )
-			UIVM_KeyEvent( key, down );
-		else if ( (Key_GetCatcher() & KEYCATCH_CGAME) && cls.cgameStarted )
-			CGVM_KeyEvent( key, down );
+		if ( (Key_GetCatcher() & KEYCATCH_UI) && cls.uiStarted ) {}
+//			UIVM_KeyEvent( key, down );
+		else if ( (Key_GetCatcher() & KEYCATCH_CGAME) && cls.cgameStarted ) {}
+//			CGVM_KeyEvent( key, down );
 
 		return;
 	}
@@ -1331,14 +1331,14 @@ void CL_KeyEvent( int key, qboolean down, unsigned time ) {
 
 	// ui
 	else if ( Key_GetCatcher() & KEYCATCH_UI ) {
-		if ( cls.uiStarted )
-			UIVM_KeyEvent( key, down );
+		if ( cls.uiStarted ) {}
+//			UIVM_KeyEvent( key, down );
 	}
 
 	// cgame
 	else if ( Key_GetCatcher() & KEYCATCH_CGAME ) {
-		if ( cls.cgameStarted )
-			CGVM_KeyEvent( key, down );
+		if ( cls.cgameStarted ) {}
+//			CGVM_KeyEvent( key, down );
 	}
 
 	// chatbox
@@ -1382,7 +1382,7 @@ void CL_KeyEvent( int key, qboolean down, unsigned time ) {
 			}
 			else {
 				// down-only command
-				if ( cls.cgameStarted && cl.mSharedMemory ) {
+				/*if ( cls.cgameStarted && cl.mSharedMemory ) {
 					// don't do this unless cgame is inited and shared memory is valid
 					TCGIncomingConsoleCommand *icc = (TCGIncomingConsoleCommand *)cl.mSharedMemory;
 
@@ -1399,7 +1399,7 @@ void CL_KeyEvent( int key, qboolean down, unsigned time ) {
 						Cbuf_AddText( "\n" );
 					}
 				}
-				else {
+				else*/ {
 					//otherwise just add it
 					Cbuf_AddText( kb );
 					Cbuf_AddText( "\n" );
@@ -1427,7 +1427,7 @@ void CL_CharEvent( int key ) {
 
 	// distribute the key down event to the apropriate handler
 		 if ( Key_GetCatcher() & KEYCATCH_CONSOLE )		Field_CharEvent( &g_consoleField, key );
-	else if ( Key_GetCatcher() & KEYCATCH_UI )			UIVM_KeyEvent( key|K_CHAR_FLAG, qtrue );
+	else if ( Key_GetCatcher() & KEYCATCH_UI )			{}//UIVM_KeyEvent( key|K_CHAR_FLAG, qtrue );
 	else if ( Key_GetCatcher() & KEYCATCH_MESSAGE )		Field_CharEvent( &chatField, key );
 	else if ( cls.state == CA_DISCONNECTED )			Field_CharEvent( &g_consoleField, key );
 }

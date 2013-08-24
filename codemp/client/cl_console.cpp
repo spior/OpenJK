@@ -80,7 +80,7 @@ void Con_MessageMode3_f (void)
 		return;
 	}
 
-	chat_playerNum = CGVM_CrosshairPlayer();
+	chat_playerNum = -1;//CGVM_CrosshairPlayer();
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
 		return;
@@ -104,7 +104,7 @@ void Con_MessageMode4_f (void)
 		return;
 	}
 
-	chat_playerNum = CGVM_LastAttacker();
+	chat_playerNum = -1;//CGVM_LastAttacker();
 	if ( chat_playerNum < 0 || chat_playerNum >= MAX_CLIENTS ) {
 		chat_playerNum = -1;
 		return;
@@ -478,7 +478,7 @@ DRAWING
 ==============================================================================
 */
 
-
+#if 0
 /*
 ================
 Con_DrawInput
@@ -796,6 +796,7 @@ void Con_DrawConsole( void ) {
 }
 
 //================================================================
+#endif
 
 /*
 ==================

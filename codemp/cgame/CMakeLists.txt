@@ -113,6 +113,18 @@ set(MPCGameGFiles
 source_group("ghoul2" FILES ${MPCGameG2Files})
 set(MPCGameFiles ${MPCGameFiles} ${MPCGameG2Files})
 
+# Makemod
+set(MPCGameMMFiles
+	"${MPDir}/makermod/mm_chatbox.cpp"
+	"${MPDir}/makermod/mm_cmds.cpp"
+	"${MPDir}/makermod/mm_main.cpp"
+	"${MPDir}/makermod/mm_local.h"
+	"${MPDir}/makermod/mm_smartgun.cpp"
+	)
+source_group("makermod" FILES ${MPCGameMMFiles})
+set(MPCGameFiles ${MPCGameFiles} ${MPCGameMMFiles})
+# /Makermod
+
 add_library(${MPCGame} SHARED ${MPCGameFiles})
 
 if(NOT WIN32)

@@ -201,6 +201,7 @@ char	*Sys_DefaultHomePath(void) {
 	Com_Printf("Portable install requested, skipping homepath support\n");
 	return NULL;
 #else
+#ifdef FUCKING_RETARDED
 	typedef HRESULT (__stdcall * GETFOLDERPATH)(HWND, int, HANDLE, DWORD, LPSTR); 
 
 	TCHAR szPath[MAX_PATH];
@@ -241,5 +242,7 @@ char	*Sys_DefaultHomePath(void) {
 
 	FreeLibrary(shfolder);
 	return homePath;
+#endif
+	return NULL;
 #endif
 }

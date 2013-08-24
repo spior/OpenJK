@@ -395,7 +395,7 @@ This will be called twice if rendering in stereo mode
 void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 	re->BeginFrame( stereoFrame );
 
-	qboolean uiFullscreen = (qboolean)(cls.uiStarted && UIVM_IsFullscreen());
+	qboolean uiFullscreen = qfalse;//(qboolean)(cls.uiStarted && UIVM_IsFullscreen());
 
 	// wide aspect ratio screens need to have the sides cleared
 	// unless they are displaying game renderings
@@ -422,20 +422,20 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 			Com_Error( ERR_FATAL, "SCR_DrawScreenField: bad cls.state" );
 			break;
 		case CA_CINEMATIC:
-			SCR_DrawCinematic();
+//			SCR_DrawCinematic();
 			break;
 		case CA_DISCONNECTED:
 			// force menu up
-			S_StopAllSounds();
-			UIVM_SetActiveMenu( UIMENU_MAIN );
+//			S_StopAllSounds();
+//			UIVM_SetActiveMenu( UIMENU_MAIN );
 			break;
 		case CA_CONNECTING:
 		case CA_CHALLENGING:
 		case CA_CONNECTED:
 			// connecting clients will only show the connection dialog
 			// refresh to update the time
-			UIVM_Refresh( cls.realtime );
-			UIVM_DrawConnectScreen( qfalse );
+//			UIVM_Refresh( cls.realtime );
+//			UIVM_DrawConnectScreen( qfalse );
 			break;
 		case CA_LOADING:
 		case CA_PRIMED:
@@ -445,8 +445,8 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 			// also draw the connection information, so it doesn't
 			// flash away too briefly on local or lan games
 			// refresh to update the time
-			UIVM_Refresh( cls.realtime );
-			UIVM_DrawConnectScreen( qtrue );
+//			UIVM_Refresh( cls.realtime );
+//			UIVM_DrawConnectScreen( qtrue );
 			break;
 		case CA_ACTIVE:
 			CL_CGameRendering( stereoFrame );
@@ -457,11 +457,11 @@ void SCR_DrawScreenField( stereoFrame_t stereoFrame ) {
 
 	// the menu draws next
 	if ( Key_GetCatcher( ) & KEYCATCH_UI && cls.uiStarted ) {
-		UIVM_Refresh( cls.realtime );
+//		UIVM_Refresh( cls.realtime );
 	}
 
 	// console draws next
-	Con_DrawConsole ();
+//	Con_DrawConsole ();
 
 	// debug graph can be drawn on top of anything
 	if ( cl_debuggraph->integer || cl_timegraph->integer || cl_debugMove->integer ) {

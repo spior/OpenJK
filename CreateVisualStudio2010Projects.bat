@@ -13,6 +13,6 @@ if not defined FOUND (
 )
 if not exist build\nul (mkdir build)
 pushd build
-cmake -G "Visual Studio 10" -D CMAKE_INSTALL_PREFIX=../install ..
+cmake -G "Visual Studio 10" -D BuildMPDed=OFF -D BuildSPEngine=OFF -D BuildSPGame=OFF -D CMAKE_INSTALL_PREFIX="D:\Program Files (x86)\LucasArts\Star Wars Jedi Knight Jedi Academy\GameData\makermod" ..
 popd
 pause

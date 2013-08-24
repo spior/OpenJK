@@ -515,10 +515,10 @@ void Conbuf_AppendText( const char *pMsg )
 			b[1] = '\n';
 			b += 2;
 		}
-		else if ( Q_IsColorStringExt( &msg[i] ) )
-		{
-			i++;
-		}
+		//else if ( Q_IsColorStringExt( &msg[i] ) )
+		//{
+		//	i++;
+		//}
 		else
 		{
 			*b= msg[i];
@@ -548,7 +548,7 @@ void Conbuf_AppendText( const char *pMsg )
 	SendMessage( s_wcd.hwndBuffer, EM_SCROLLCARET, 0, 0 );
 	SendMessage( s_wcd.hwndBuffer, EM_REPLACESEL, 0, (LPARAM) buffer );
 	*/
-	printf(buffer);
+	CON_Print(buffer);
 }
 
 /*

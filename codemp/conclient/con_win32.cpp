@@ -102,10 +102,10 @@ void Sys_SigHandler( int signal )
 #ifndef DEDICATED
 		CL_Shutdown();
 #endif
-		SV_Shutdown( "Signal caught" );
+//		SV_Shutdown( "Signal caught" );
 	}
 
-	Sys_Exit( 0 ); // Exit with 0 to avoid recursive signals
+//	Sys_Exit( 0 ); // Exit with 0 to avoid recursive signals
 }
 
 /*
@@ -213,7 +213,7 @@ static void CON_Show( void )
 	COORD writePos = { 0, 0 };
 	SMALL_RECT writeArea = { 0, 0, 0, 0 };
 	COORD cursorPos;
-	int i;
+	int i, a, qconsole_linelen_buf=qconsole_linelen;
 	CHAR_INFO line[ MAX_EDIT_LINE ];
 	WORD attrib;
 
@@ -232,25 +232,29 @@ static void CON_Show( void )
 	attrib = CON_ColorCharToAttrib( COLOR_WHITE );
 
 	// build a space-padded CHAR_INFO array
-	for( i = 0; i < MAX_EDIT_LINE; i++ )
+	for( i = 0, a = 0; i < MAX_EDIT_LINE; i++, a++ )
 	{
 		if( i < qconsole_linelen )
 		{
 			if( Q_IsColorString( qconsole_line + i ) )
+			{
 				attrib = CON_ColorCharToAttrib( *( qconsole_line + i + 1 ) );
+				i+=2;
+				qconsole_linelen_buf-=2;
+			}
 
-			line[ i ].Char.AsciiChar = qconsole_line[ i ];
+			line[ a ].Char.AsciiChar = qconsole_line[ i ];
 		}
 		else
-			line[ i ].Char.AsciiChar = ' ';
+			line[ a ].Char.AsciiChar = ' ';
 
-		line[ i ].Attributes = attrib;
+		line[ a ].Attributes = attrib;
 	}
 
 	if( qconsole_linelen > binfo.srWindow.Right )
 	{
 		WriteConsoleOutput( qconsole_hout, 
-			line + (qconsole_linelen - binfo.srWindow.Right ),
+			line + (qconsole_linelen_buf - binfo.srWindow.Right ),
 			writeSize, writePos, &writeArea );
 	}
 	else
@@ -261,7 +265,7 @@ static void CON_Show( void )
 
 	// set curor position
 	cursorPos.Y = binfo.dwCursorPosition.Y;
-	cursorPos.X = qconsole_linelen > binfo.srWindow.Right ? binfo.srWindow.Right : qconsole_linelen;
+	cursorPos.X = qconsole_linelen_buf > binfo.srWindow.Right ? binfo.srWindow.Right : qconsole_linelen_buf;
 
 	SetConsoleCursorPosition( qconsole_hout, cursorPos );
 }
@@ -300,6 +304,18 @@ void CON_Shutdown( void )
 	CloseHandle( qconsole_hin );
 }
 
+BOOL CON_SetSize(const int width, const int height, const int scroll_mass)
+{
+	BOOL ret;
+	COORD coord = { width, height*scroll_mass };
+	ret = SetConsoleScreenBufferSize(qconsole_hout, coord);
+	if(!ret)
+		return ret;
+	SMALL_RECT rect = { 0, 0, width-1, height-1 };
+	ret = SetConsoleWindowInfo(qconsole_hout, 1, &rect);
+	return ret;
+}
+
 /*
 ==================
 CON_Init
@@ -333,7 +349,7 @@ void CON_Init( void )
 	qconsole_attrib = info.wAttributes;
 	qconsole_backgroundAttrib = qconsole_attrib & (BACKGROUND_BLUE|BACKGROUND_GREEN|BACKGROUND_RED|BACKGROUND_INTENSITY);
 
-	SetConsoleTitle(CLIENT_WINDOW_TITLE " Dedicated Server Console");
+	SetConsoleTitle(CLIENT_CONSOLE_TITLE);
 
 	// initialize history
 	for( i = 0; i < QCONSOLE_HISTORY; i++ )
@@ -341,6 +357,8 @@ void CON_Init( void )
 
 	// set text color to white
 	SetConsoleTextAttribute( qconsole_hout, CON_ColorCharToAttrib( COLOR_WHITE ) );
+
+	CON_SetSize(97, 25, 10);
 }
 
 /*
@@ -459,6 +477,7 @@ CON_WindowsColorPrint
 Set text colors based on Q3 color codes
 =================
 */
+#define	MAXPRINTMSG	4096
 void CON_WindowsColorPrint( const char *msg )
 {
 	static char buffer[ MAXPRINTMSG ];
@@ -466,7 +485,7 @@ void CON_WindowsColorPrint( const char *msg )
 
 	while( *msg )
 	{
-		qconsole_drawinput = ( *msg == '\n' );
+		qconsole_drawinput = (qboolean)( *msg == '\n' );
 
 		if( Q_IsColorString( msg ) || *msg == '\n' )
 		{

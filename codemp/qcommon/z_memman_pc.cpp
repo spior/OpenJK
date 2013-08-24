@@ -192,22 +192,22 @@ void *Z_Malloc(int iSize, memtag_t eTag, qboolean bZeroit /* = qfalse */, int iU
 
 			// ditch the BSP cache...
 			//
-			extern qboolean CM_DeleteCachedMap(qboolean bGuaranteedOkToDelete);
+			/*extern qboolean CM_DeleteCachedMap(qboolean bGuaranteedOkToDelete);
 			if (CM_DeleteCachedMap(qfalse))
 			{
 				gbMemFreeupOccured = qtrue;
 				continue;		// we've just ditched a whole load of memory, so try again with the malloc
-			}
+			}*/
 
 
 			// ditch any sounds not used on this level...
 			//
-			extern qboolean SND_RegisterAudio_LevelLoadEnd(qboolean bDeleteEverythingNotUsedThisLevel);
+			/*extern qboolean SND_RegisterAudio_LevelLoadEnd(qboolean bDeleteEverythingNotUsedThisLevel);
 			if (SND_RegisterAudio_LevelLoadEnd(qtrue))
 			{
 				gbMemFreeupOccured = qtrue;
 				continue;		// we've dropped at least one sound, so try again with the malloc
-			}
+			}*/
 
 #ifndef DEDICATED
 			// ditch any image_t's (and associated GL memory) not used on this level...
@@ -237,7 +237,7 @@ void *Z_Malloc(int iSize, memtag_t eTag, qboolean bZeroit /* = qfalse */, int iU
 			//	again (though this will have freed twice the requested amount in that case), so it'll either work 
 			//	eventually or not free up enough and drop through to the final ERR_DROP. No worries...
 			//
-			extern qboolean gbInsideLoadSound;
+			/*extern qboolean gbInsideLoadSound;
 			extern int SND_FreeOldestSound();
 			if (!gbInsideLoadSound)
 			{
@@ -254,7 +254,7 @@ void *Z_Malloc(int iSize, memtag_t eTag, qboolean bZeroit /* = qfalse */, int iU
 					gbMemFreeupOccured = qtrue;
 					continue;
 				}
-			}
+			}*/
 
 			// sigh, dunno what else to try, I guess we'll have to give up and report this as an out-of-mem error...
 			//
@@ -753,10 +753,10 @@ void Hunk_Clear( void ) {
 	CL_ShutdownCGame(qfalse);
 	CL_ShutdownUI(qfalse);
 #endif
-	SV_ShutdownGameProgs();
+//	SV_ShutdownGameProgs();
 
 #ifndef DEDICATED
-	CIN_CloseAllVideos();
+//	CIN_CloseAllVideos();
 #endif
 
 	hunk_tag = TAG_HUNK_MARK1;
@@ -768,7 +768,7 @@ void Hunk_Clear( void ) {
 	}
 
 //	Com_Printf( "Hunk_Clear: reset the hunk ok\n" );
-	VM_Clear();
+//	VM_Clear();
 
 //See if any ghoul2 stuff was leaked, at this point it should be all cleaned up.
 #ifdef _FULL_G2_LEAK_CHECKING

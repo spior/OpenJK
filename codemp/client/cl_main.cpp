@@ -117,7 +117,7 @@ typedef struct serverStatus_s
 serverStatus_t cl_serverStatusList[MAX_SERVERSTATUSREQUESTS];
 int serverStatusCount;
 
-CMiniHeap *G2VertSpaceClient = 0;
+//CMiniHeap *G2VertSpaceClient = 0;
 
 #if defined __USEA3D && defined __A3D_GEOM
 	void hA3Dg_ExportRenderGeom (refexport_t *incoming_re);
@@ -435,8 +435,8 @@ void CL_DemoCompleted( void ) {
 	//I'm not sure why it ever worked in TA, but whatever. This code will bring us back to the main menu
 	//after a demo is finished playing instead.
 	CL_Disconnect_f();
-	S_StopAllSounds();
-	UIVM_SetActiveMenu( UIMENU_MAIN );
+//	S_StopAllSounds();
+//	UIVM_SetActiveMenu( UIMENU_MAIN );
 
 	CL_NextDemo();
 }
@@ -618,8 +618,8 @@ CL_ShutdownAll
 =====================
 */
 void CL_ShutdownAll( qboolean shutdownRef, qboolean delayFreeVM ) {
-	if(CL_VideoRecording())
-		CL_CloseAVI();
+	/*if(CL_VideoRecording())
+		CL_CloseAVI();*/
 
 	if(clc.demorecording)
 		CL_StopRecord_f();
@@ -630,6 +630,7 @@ void CL_ShutdownAll( qboolean shutdownRef, qboolean delayFreeVM ) {
 #endif
 
 	// clear sounds
+	/*
 	S_DisableSounds();
 	// shutdown CGame
 	CL_ShutdownCGame(delayFreeVM);
@@ -642,6 +643,7 @@ void CL_ShutdownAll( qboolean shutdownRef, qboolean delayFreeVM ) {
 	if ( re && re->Shutdown ) {
 		re->Shutdown( qfalse );		// don't destroy window or context
 	}
+	*/
 
 	cls.uiStarted = qfalse;
 	cls.cgameStarted = qfalse;
@@ -666,7 +668,7 @@ void CL_FlushMemory( qboolean delayFreeVM ) {
 	// if not running a server clear the whole hunk
 	if ( !com_sv_running->integer ) {
 		// clear collision map data
-		CM_ClearMap();
+//		CM_ClearMap();
 		// clear the whole hunk
 		Hunk_Clear();
 	}
@@ -793,11 +795,11 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	}
 
 	if ( cls.uiStarted && showMainMenu ) {
-		UIVM_SetActiveMenu( UIMENU_NONE );
+//		UIVM_SetActiveMenu( UIMENU_NONE );
 	}
 
-	SCR_StopCinematic ();
-	S_ClearSoundBuffer();
+//	SCR_StopCinematic ();
+//	S_ClearSoundBuffer();
 
 	// send a disconnect message to the server
 	// send it a few times in case one is dropped
@@ -825,11 +827,11 @@ void CL_Disconnect( qboolean showMainMenu ) {
 	cl_connectedUI = 0;
 
 	// Stop recording any video
-	if( CL_VideoRecording( ) ) {
+	/*if( CL_VideoRecording( ) ) {
 		// Finish rendering current frame
 		SCR_UpdateScreen( );
 		CL_CloseAVI( );
-	}
+	}*/
 
 	CL_UpdateGUID( NULL, 0 );
 }
@@ -949,7 +951,7 @@ CL_Disconnect_f
 ==================
 */
 void CL_Disconnect_f( void ) {
-	SCR_StopCinematic();
+//	SCR_StopCinematic();
 	Cvar_Set("ui_singlePlayerActive", "0");
 	if ( cls.state != CA_DISCONNECTED && cls.state != CA_CINEMATIC ) {
 		Com_Error (ERR_DISCONNECT, "Disconnected from server");
@@ -999,12 +1001,12 @@ void CL_Connect_f( void ) {
 
 	if ( com_sv_running->integer && !strcmp( server, "localhost" ) ) {
 		// if running a local server, kill it
-		SV_Shutdown( "Server quit\n" );
+//		SV_Shutdown( "Server quit\n" );
 	}
 
 	// make sure a local server is killed
 	Cvar_Set( "sv_killserver", "1" );
-	SV_Frame( 0 );
+//	SV_Frame( 0 );
 
 	CL_Disconnect( qtrue );
 	Con_Close();
@@ -1144,6 +1146,7 @@ void CL_ResetPureClientAtServer( void ) {
 	CL_AddReliableCommand( "vdr", qfalse );
 }
 
+#if 0
 /*
 =================
 CL_Vid_Restart_f
@@ -1243,7 +1246,7 @@ void CL_Snd_Restart_f( void ) {
 	extern void S_RestartMusic( void );
 	S_RestartMusic();
 }
-
+#endif
 
 /*
 ==================
@@ -2119,18 +2122,18 @@ void CL_Frame ( int msec ) {
 		return;
 	}
 
-	SE_CheckForLanguageUpdates();	// will take zero time to execute unless language changes, then will reload strings.
+//	SE_CheckForLanguageUpdates();	// will take zero time to execute unless language changes, then will reload strings.
 									//	of course this still doesn't work for menus...
 
-	if ( cls.state == CA_DISCONNECTED && !( Key_GetCatcher( ) & KEYCATCH_UI )
+	/*if ( cls.state == CA_DISCONNECTED && !( Key_GetCatcher( ) & KEYCATCH_UI )
 		&& !com_sv_running->integer && cls.uiStarted ) {
 		// if disconnected, bring up the menu
 		S_StopAllSounds();
 		UIVM_SetActiveMenu( UIMENU_MAIN );
-	}
+	}*/
 
 	// if recording an avi, lock to a fixed fps
-	if ( CL_VideoRecording( ) && cl_aviFrameRate->integer && msec) {
+	/*if ( CL_VideoRecording( ) && cl_aviFrameRate->integer && msec) {
 		// save the current screen
 		if ( cls.state == CA_ACTIVE || cl_forceavidemo->integer) {
 			CL_TakeVideoFrame( );
@@ -2141,7 +2144,7 @@ void CL_Frame ( int msec ) {
 				msec = 1;
 			}
 		}
-	}
+	}*/
 
 	// save the msec before checking pause
 	cls.realFrametime = msec;
@@ -2172,7 +2175,7 @@ void CL_Frame ( int msec ) {
 #endif
 
 	if ( cl_timegraph->integer ) {
-		SCR_DebugGraph ( cls.realFrametime * 0.25, 0 );
+//		SCR_DebugGraph ( cls.realFrametime * 0.25, 0 );
 	}
 
 	// see if we need to update any userinfo
@@ -2192,7 +2195,7 @@ void CL_Frame ( int msec ) {
 	CL_SetCGameTime();
 
 	// update the screen
-	SCR_UpdateScreen();
+//	SCR_UpdateScreen();
 
 	// SpioR: do our thing here because no cgame
 	qboolean CL_GetServerCommand( int serverCommandNumber );
@@ -2205,18 +2208,18 @@ void CL_Frame ( int msec ) {
 	}
 
 	// update audio
-	S_Update();
+//	S_Update();
 
 	// advance local effects for next frame
-	SCR_RunCinematic();
+//	SCR_RunCinematic();
 
 	Con_RunConsole();
 
 	// reset the heap for Ghoul2 vert transform space gameside
-	if (G2VertSpaceServer)
+	/*if (G2VertSpaceServer)
 	{
 		G2VertSpaceServer->ResetHeap();
-	}
+	}*/
 
 	cls.framecount++;
 }
@@ -2224,6 +2227,7 @@ void CL_Frame ( int msec ) {
 
 //============================================================================
 
+#if 0
 /*
 ================
 CL_RefPrintf
@@ -2290,6 +2294,7 @@ void CL_InitRenderer( void ) {
 	g_console_field_width = cls.glconfig.vidWidth / SMALLCHAR_WIDTH - 2;
 	g_consoleField.widthInChars = g_console_field_width;
 }
+#endif
 
 /*
 ============================
@@ -2308,29 +2313,28 @@ void CL_StartHunkUsers( void ) {
 		return;
 	}
 
-	/*
 	if ( !cls.rendererStarted ) {
 		cls.rendererStarted = qtrue;
-		CL_InitRenderer();
+//		CL_InitRenderer();
 	}
 
 	if ( !cls.soundStarted ) {
 		cls.soundStarted = qtrue;
-		S_Init();
+//		S_Init();
 	}
 
 	if ( !cls.soundRegistered ) {
 		cls.soundRegistered = qtrue;
-		S_BeginRegistration();
+//		S_BeginRegistration();
 	}
 
 	if ( !cls.uiStarted ) {
 		cls.uiStarted = qtrue;
-		CL_InitUI();
+//		CL_InitUI();
 	}
-	*/
 }
 
+#if 0
 /*
 ============
 CL_InitRef
@@ -2508,6 +2512,7 @@ void CL_InitRef( void ) {
 	// unpause so the cgame definately gets a snapshot and renders a frame
 	Cvar_Set( "cl_paused", "0" );
 }
+#endif
 
 
 //===========================================================================================
@@ -2550,6 +2555,7 @@ void CL_SetForcePowers_f( void ) {
 	return;
 }
 
+#if 0
 /*
 ==================
 CL_VideoFilename
@@ -2610,6 +2616,7 @@ void CL_StopVideo_f( void )
 {
 	CL_CloseAVI( );
 }
+#endif
 
 #define G2_VERT_SPACE_CLIENT_SIZE 256
 
@@ -2839,41 +2846,41 @@ void CL_Shutdown( void ) {
 	}
 	recursive = qtrue;
 
-	if (G2VertSpaceClient)
+	/*if (G2VertSpaceClient)
 	{
 		delete G2VertSpaceClient;
 		G2VertSpaceClient = 0;
-	}
+	}*/
 
 	CL_Disconnect( qtrue );
 
 	// RJ: added the shutdown all to close down the cgame (to free up some memory, such as in the fx system)
 	CL_ShutdownAll( qtrue, qfalse );
 
-	S_Shutdown();
-	//CL_ShutdownUI();
+//	S_Shutdown();
+//	CL_ShutdownUI();
 
 	Cmd_RemoveCommand ("cmd");
 	Cmd_RemoveCommand ("configstrings");
 	Cmd_RemoveCommand ("clientinfo");
-	Cmd_RemoveCommand ("snd_restart");
-	Cmd_RemoveCommand ("vid_restart");
+//	Cmd_RemoveCommand ("snd_restart");
+//	Cmd_RemoveCommand ("vid_restart");
 	Cmd_RemoveCommand ("disconnect");
 	Cmd_RemoveCommand ("record");
 	Cmd_RemoveCommand ("demo");
-	Cmd_RemoveCommand ("cinematic");
-	Cmd_RemoveCommand ("stoprecord");
+//	Cmd_RemoveCommand ("cinematic");
+//	Cmd_RemoveCommand ("stoprecord");
 	Cmd_RemoveCommand ("connect");
-	Cmd_RemoveCommand ("localservers");
-	Cmd_RemoveCommand ("globalservers");
+//	Cmd_RemoveCommand ("localservers");
+//	Cmd_RemoveCommand ("globalservers");
 	Cmd_RemoveCommand ("rcon");
 	Cmd_RemoveCommand ("ping");
 	Cmd_RemoveCommand ("serverstatus");
 	Cmd_RemoveCommand ("showip");
 	Cmd_RemoveCommand ("model");
 	Cmd_RemoveCommand ("forcepowers");
-	Cmd_RemoveCommand ("video");
-	Cmd_RemoveCommand ("stopvideo");
+//	Cmd_RemoveCommand ("video");
+//	Cmd_RemoveCommand ("stopvideo");
 
 	Cvar_Set( "cl_running", "0" );
 

@@ -376,7 +376,7 @@ void IN_VoiceChatButton(void)
 	{ //ui not loaded so this command is useless
 		return;
 	}
-	UIVM_SetActiveMenu( UIMENU_VOICECHAT );
+//	UIVM_SetActiveMenu( UIMENU_VOICECHAT );
 }
 
 void IN_KeyDown( kbutton_t *b ) {
@@ -585,7 +585,7 @@ static void CL_AutoMapKey(int autoMapKey, qboolean up)
 
 	if (cls.cgameStarted)
 	{
-		CGVM_AutomapInput();
+//		CGVM_AutomapInput();
 	}
 
 	g_clAutoMapInput.goToDefaults = qfalse;
@@ -916,15 +916,15 @@ void CL_MouseEvent( int dx, int dy, int time ) {
 		g_clAutoMapInput.yaw = dx;
 		g_clAutoMapInput.pitch = dy;
 		memcpy(data, &g_clAutoMapInput, sizeof(autoMapInput_t));
-		CGVM_AutomapInput();
+//		CGVM_AutomapInput();
 
 		g_clAutoMapInput.yaw = 0.0f;
 		g_clAutoMapInput.pitch = 0.0f;
 	}
 	else if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
-		UIVM_MouseEvent( dx, dy );
+//		UIVM_MouseEvent( dx, dy );
 	} else if ( Key_GetCatcher( ) & KEYCATCH_CGAME ) {
-		CGVM_MouseEvent( dx, dy );
+//		CGVM_MouseEvent( dx, dy );
 	} else {
 		cl.mouseDx[cl.mouseIndex] += dx;
 		cl.mouseDy[cl.mouseIndex] += dy;
@@ -1129,7 +1129,7 @@ qboolean CL_NoUseableForce(void)
 		return qfalse;
 	}
 
-	return CGVM_NoUseableForce();
+	return qfalse;//CGVM_NoUseableForce();
 }
 
 /*

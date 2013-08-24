@@ -6,7 +6,7 @@
 #include "GenericParser2.h"
 #include "stringed_ingame.h"
 #include "qcommon/game_version.h"
-#include "../server/NPCNav/navigator.h"
+//#include "../server/NPCNav/navigator.h"
 
 #define	MAXPRINTMSG	4096
 
@@ -276,7 +276,7 @@ void QDECL Com_Error( int code, const char *fmt, ... ) {
 		throw code;
 	} else {
 		CL_Shutdown ();
-		SV_Shutdown (va("Server fatal crashed: %s\n", com_errorMessage));
+//		SV_Shutdown (va("Server fatal crashed: %s\n", com_errorMessage));
 	}
 
 	Com_Shutdown ();
@@ -296,7 +296,7 @@ do the apropriate things.
 void Com_Quit_f( void ) {
 	// don't try to shutdown if we are in a recursive error
 	if ( !com_errorEntered ) {
-		SV_Shutdown ("Server quit\n");
+//		SV_Shutdown ("Server quit\n");
 		CL_Shutdown ();
 		Com_Shutdown ();
 		FS_Shutdown(qtrue);
@@ -830,6 +830,7 @@ sysEvent_t	Com_GetEvent( void ) {
 	return Com_GetRealEvent();
 }
 
+#if 0
 /*
 =================
 Com_RunAndTimeServerPacket
@@ -854,6 +855,7 @@ void Com_RunAndTimeServerPacket( netadr_t *evFrom, msg_t *buf ) {
 		}
 	}
 }
+#endif
 
 /*
 =================
@@ -882,9 +884,9 @@ int Com_EventLoop( void ) {
 
 			while ( NET_GetLoopPacket( NS_SERVER, &evFrom, &buf ) ) {
 				// if the server just shut down, flush the events
-				if ( com_sv_running->integer ) {
+				/*if ( com_sv_running->integer ) {
 					Com_RunAndTimeServerPacket( &evFrom, &buf );
-				}
+				}*/
 			}
 
 			return ev.evTime;
@@ -945,9 +947,9 @@ int Com_EventLoop( void ) {
 				continue;
 			}
 			Com_Memcpy( buf.data, (byte *)((netadr_t *)ev.evPtr + 1), buf.cursize );
-			if ( com_sv_running->integer ) {
+			/*if ( com_sv_running->integer ) {
 				Com_RunAndTimeServerPacket( &evFrom, &buf );
-			} else {
+			} else*/ {
 				CL_PacketEvent( evFrom, &buf );
 			}
 			break;
@@ -1115,7 +1117,7 @@ Handles freeing up of resources when Com_Error is called.
 static void Com_CatchError ( int code )
 {
 	if ( code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT ) {
-		SV_Shutdown( "Server disconnected" );
+//		SV_Shutdown( "Server disconnected" );
 		CL_Disconnect( qtrue );
 		CL_FlushMemory( qtrue );
 		// make sure we can get at our local stuff
@@ -1125,7 +1127,7 @@ static void Com_CatchError ( int code )
 		Com_Printf ("********************\n"
 					"ERROR: %s\n"
 					"********************\n", com_errorMessage);
-		SV_Shutdown (va("Server crashed: %s\n",  com_errorMessage));
+//		SV_Shutdown (va("Server crashed: %s\n",  com_errorMessage));
 		CL_Disconnect( qtrue );
 		CL_FlushMemory( qtrue );
 		// make sure we can get at our local stuff
@@ -1151,7 +1153,7 @@ void Com_Init( char *commandLine ) {
 
 		Cvar_Init ();
 
-		navigator.Init();
+//		navigator.Init();
 
 		// initialize the weak pseudo-random number generator for use later.
 		Com_InitRand();
@@ -1295,7 +1297,7 @@ void Com_Init( char *commandLine ) {
 
 		Sys_Init();
 		Netchan_Init( Com_Milliseconds() & 0xffff );	// pick a port value that should be nice and random
-		SV_Init();
+//		SV_Init();
 
 		com_dedicated->modified = qfalse;
 		if ( !com_dedicated->integer ) {
@@ -1549,7 +1551,7 @@ try
 		timeBeforeServer = Sys_Milliseconds ();
 	}
 
-	SV_Frame( msec );
+//	SV_Frame( msec );
 
 	// if "dedicated" has been modified, start up
 	// or shut down the client system.
@@ -1618,7 +1620,7 @@ try
 	//
 	// trace optimization tracking
 	//
-	if ( com_showtrace->integer ) {
+	/*if ( com_showtrace->integer ) {
 	
 		extern	int c_traces, c_brush_traces, c_patch_traces;
 		extern	int	c_pointcontents;
@@ -1629,7 +1631,7 @@ try
 		c_brush_traces = 0;
 		c_patch_traces = 0;
 		c_pointcontents = 0;
-	}
+	}*/
 
 	com_frameNumber++;
 
@@ -1660,7 +1662,7 @@ Com_Shutdown
 void MSG_shutdownHuffman();
 void Com_Shutdown (void) 
 {
-	CM_ClearMap();
+//	CM_ClearMap();
 
 	if (logfile) {
 		FS_FCloseFile (logfile);
@@ -1965,6 +1967,7 @@ void Field_AutoComplete( field_t *field ) {
 	Field_CompleteCommand( completionField->buffer, qtrue, qtrue );
 }
 
+#if 0
 //rwwRMG: Inserted:
 /*
 ============
@@ -2033,6 +2036,7 @@ CGenericParser2 *Com_ParseTextFile(const char *file, bool cleanFirst, bool write
 
 	return parse;
 }
+#endif
 
 /*
 ==================

@@ -228,7 +228,8 @@ if(BuildMPEngine OR BuildMPDed)
 		set(MPEngineAndDedCommonFiles ${MPEngineAndDedCommonFiles})
 	endif(WIN32)
 	source_group("common" FILES ${MPEngineAndDedCommonFiles})
-	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedCommonFiles})
+#	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedCommonFiles})
+	set(MPDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedCommonFiles})
 	
 	set(MPEngineAndDedG2Files
 		"${MPDir}/ghoul2/G2.h"
@@ -236,7 +237,8 @@ if(BuildMPEngine OR BuildMPDed)
 		"${MPDir}/ghoul2/ghoul2_shared.h"
 		)
 	source_group("ghoul2" FILES ${MPEngineAndDedG2Files})
-	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedG2Files})
+#	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedG2Files})
+	set(MPDedFiles ${MPDedFiles} ${MPEngineAndDedG2Files})
 	
 	set(MPEngineAndDedIcarusFiles
 		"${MPDir}/icarus/BlockStream.cpp"
@@ -263,7 +265,8 @@ if(BuildMPEngine OR BuildMPDed)
 		"${MPDir}/icarus/tokenizer.h"
 		)
 	source_group("icarus" FILES ${MPEngineAndDedIcarusFiles})
-	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedIcarusFiles})
+#	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedIcarusFiles})
+	set(MPDedFiles ${MPDedFiles} ${MPEngineAndDedIcarusFiles})
 	
 	set(MPEngineAndDedRmgFiles
 		"${MPDir}/RMG/RM_Area.cpp"
@@ -293,7 +296,8 @@ if(BuildMPEngine OR BuildMPDed)
 		"${MPDir}/RMG/RM_Terrain.h"
 		)
 	source_group("rmg" FILES ${MPEngineAndDedRmgFiles})
-	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedRmgFiles})
+#	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedRmgFiles})
+	set(MPDedFiles ${MPDedFiles} ${MPEngineAndDedRmgFiles})
 	
 	set(MPEngineAndDedServerFiles
 		"${MPDir}/server/NPCNav/navigator.cpp"
@@ -311,7 +315,8 @@ if(BuildMPEngine OR BuildMPDed)
 		"${MPDir}/server/sv_gameapi.cpp"
 		)
 	source_group("server" FILES ${MPEngineAndDedServerFiles})
-	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedServerFiles})
+#	set(MPEngineAndDedFiles ${MPEngineAndDedFiles} ${MPEngineAndDedServerFiles})
+	set(MPDedFiles ${MPDedFiles} ${MPEngineAndDedServerFiles})
 	
 	set(MPEngineAndDedUiFiles
 		"${MPDir}/ui/keycodes.h"
@@ -362,7 +367,7 @@ if(BuildMPEngine)
 	# (mrw) TODO Is this actually required on windows? It is loaded at runtime, should not be linked?
 	find_package(OpenGL REQUIRED)
 	set(MPEngineIncludeDirectories ${MPEngineIncludeDirectories} ${OPENGL_INCLUDE_DIR})
-	set(MPEngineLibraries ${MPEngineLibraries} ${OPENGL_LIBRARIES})
+#	set(MPEngineLibraries ${MPEngineLibraries} ${OPENGL_LIBRARIES})
 
 	# OpenAL (is optionally included for Windows)
 	if(UseInternalOpenAL)
@@ -373,17 +378,17 @@ if(BuildMPEngine)
 		if(NOT OpenALLibrary)
 			message(FATAL_ERROR "UseInternalOpenAL enabled, but lib/OpenAL32.lib not found!")
 		endif(NOT OpenALLibrary)
-		set(MPEngineLibraries ${MPEngineLibraries} ${OpenALLibrary})
+#		set(MPEngineLibraries ${MPEngineLibraries} ${OpenALLibrary})
 	else(UseInternalOpenAL)
 		find_package(OpenAL REQUIRED)
 		set(MPEngineIncludeDirectories ${MPEngineIncludeDirectories} ${OPENAL_INCLUDE_DIR})
-		set(MPEngineLibraries ${MPEngineLibraries} ${OPENAL_LIBRARY})
+#		set(MPEngineLibraries ${MPEngineLibraries} ${OPENAL_LIBRARY})
 	endif(UseInternalOpenAL)
 
 	if(NOT WIN32)
 		find_package(SDL2 REQUIRED)
 		set(MPEngineIncludeDirectories ${MPEngineIncludeDirectories} ${SDL2_INCLUDE_DIR})
-		set(MPEngineLibraries ${MPEngineLibraries} ${SDL2_LIBRARY})
+#		set(MPEngineLibraries ${MPEngineLibraries} ${SDL2_LIBRARY})
 	endif(NOT WIN32)
 
 	# EAX is Windows-Only (right?)
@@ -393,68 +398,131 @@ if(BuildMPEngine)
 			"${MPDir}/client/eax/EaxMan.h"
 			)
 		source_group("eax" FILES ${MPEngineEAXFiles})
-		set(MPEngineFiles ${MPEngineFiles} ${MPEngineEAXFiles})
+#		set(MPEngineFiles ${MPEngineFiles} ${MPEngineEAXFiles})
 	endif(WIN32)
 	
 	#    Source Files
+
+	# SpioR: added this here
+	
+	
+	set(MPEngineCommonFiles
+		"${MPDir}/qcommon/q_shared.h"
+		"${MPDir}/qcommon/chash.h"
+#		"${MPDir}/qcommon/cm_draw.cpp"
+#		"${MPDir}/qcommon/cm_draw.h"
+#		"${MPDir}/qcommon/cm_landscape.h"
+#		"${MPDir}/qcommon/cm_load.cpp"
+#		"${MPDir}/qcommon/cm_local.h"
+#		"${MPDir}/qcommon/cm_patch.cpp"
+#		"${MPDir}/qcommon/cm_patch.h"
+#		"${MPDir}/qcommon/cm_polylib.cpp"
+#		"${MPDir}/qcommon/cm_polylib.h"
+#		"${MPDir}/qcommon/cm_public.h"
+#		"${MPDir}/qcommon/cm_randomterrain.cpp"
+#		"${MPDir}/qcommon/cm_randomterrain.h"
+#		"${MPDir}/qcommon/cm_shader.cpp"
+#		"${MPDir}/qcommon/cm_terrain.cpp"
+#		"${MPDir}/qcommon/cm_terrainmap.h"
+#		"${MPDir}/qcommon/cm_test.cpp"
+#		"${MPDir}/qcommon/cm_trace.cpp"
+		"${MPDir}/qcommon/cmd_common.cpp"
+		"${MPDir}/qcommon/cmd_pc.cpp"
+		"${MPDir}/qcommon/common.cpp"
+		"${MPDir}/qcommon/cvar.cpp"
+		"${MPDir}/qcommon/disablewarnings.h"
+		"${MPDir}/qcommon/files_common.cpp"
+		"${MPDir}/qcommon/files_pc.cpp"
+		"${MPDir}/qcommon/game_version.h"
+#		"${MPDir}/qcommon/GenericParser2.cpp"
+#		"${MPDir}/qcommon/GenericParser2.h"
+		"${MPDir}/qcommon/huffman.cpp"
+		"${MPDir}/qcommon/md4.cpp"
+		"${MPDir}/qcommon/md5.cpp"
+#		"${MPDir}/qcommon/MiniHeap.h"
+		"${MPDir}/qcommon/msg.cpp"
+#		"${MPDir}/qcommon/matcomp.h"
+#		"${MPDir}/qcommon/matcomp.cpp"
+		"${MPDir}/qcommon/net_chan.cpp"
+		"${MPDir}/qcommon/q_math.cpp"
+		"${MPDir}/qcommon/q_shared.cpp"
+		"${MPDir}/qcommon/qcommon.h"
+		"${MPDir}/qcommon/qfiles.h"
+#		"${MPDir}/qcommon/RoffSystem.cpp"
+#		"${MPDir}/qcommon/RoffSystem.h"
+#		"${MPDir}/qcommon/sstring.h"
+		"${MPDir}/qcommon/stringed_ingame.cpp"
+		"${MPDir}/qcommon/stringed_ingame.h"
+		"${MPDir}/qcommon/stringed_interface.cpp"
+		"${MPDir}/qcommon/stringed_interface.h"
+		"${MPDir}/qcommon/tags.h"
+		"${MPDir}/qcommon/timing.h"
+#		"${MPDir}/qcommon/vm.cpp"
+		"${MPDir}/qcommon/z_memman_pc.cpp"
+		)
+	if(WIN32)
+		set(MPEngineCommonFiles ${MPEngineCommonFiles})
+	endif(WIN32)
+	source_group("common" FILES ${MPEngineCommonFiles})
+	set(MPEngineFiles ${MPEngineAndDedFiles} ${MPEngineCommonFiles})
 	
 	# TODO: Allow for use of external library
 	file(GLOB_RECURSE MPEngineJpegFiles "${OpenJKLibDir}/jpeg-8c/*.c" "${OpenJKLibDir}/jpeg-8c/*.h")
 	source_group("jpeg-8c" FILES ${MPEngineJpegFiles})
-	set(MPEngineFiles ${MPEngineFiles} ${MPEngineJpegFiles})
+#	set(MPEngineFiles ${MPEngineFiles} ${MPEngineJpegFiles})
 	
 	set(MPEngineClientFiles
-		"${MPDir}/client/cl_avi.cpp"
+#		"${MPDir}/client/cl_avi.cpp"
 		"${MPDir}/client/cl_cgame.cpp"
-		"${MPDir}/client/cl_cgameapi.cpp"
-		"${MPDir}/client/cl_cgameapi.h"
-		"${MPDir}/client/cl_cin.cpp"
+#		"${MPDir}/client/cl_cgameapi.cpp"
+#		"${MPDir}/client/cl_cgameapi.h"
+#		"${MPDir}/client/cl_cin.cpp"
 		"${MPDir}/client/cl_console.cpp"
 		"${MPDir}/client/cl_input.cpp"
-		"${MPDir}/client/cl_keys.cpp"
-		"${MPDir}/client/cl_lan.cpp"
-		"${MPDir}/client/cl_lan.h"
+		"${MPDir}/client/cl_keys.cpp" # Think we need this file for console history and such
+#		"${MPDir}/client/cl_lan.cpp"
+#		"${MPDir}/client/cl_lan.h"
 		"${MPDir}/client/cl_main.cpp"
 		"${MPDir}/client/cl_net_chan.cpp"
 		"${MPDir}/client/cl_parse.cpp"
 		"${MPDir}/client/cl_scrn.cpp"
 		"${MPDir}/client/cl_ui.cpp"
-		"${MPDir}/client/cl_uiapi.cpp"
-		"${MPDir}/client/cl_uiapi.h"
-		"${MPDir}/client/FXExport.cpp"
-		"${MPDir}/client/FXExport.h"
-		"${MPDir}/client/FxPrimitives.cpp"
-		"${MPDir}/client/FxPrimitives.h"
-		"${MPDir}/client/FxScheduler.cpp"
-		"${MPDir}/client/FxScheduler.h"
-		"${MPDir}/client/FxSystem.cpp"
-		"${MPDir}/client/FxSystem.h"
-		"${MPDir}/client/FxTemplate.cpp"
-		"${MPDir}/client/FxUtil.cpp"
-		"${MPDir}/client/FxUtil.h"
-		"${MPDir}/client/snd_ambient.cpp"
-		"${MPDir}/client/snd_ambient.h"
-		"${MPDir}/client/snd_dma.cpp"
-		"${MPDir}/client/snd_local.h"
-		"${MPDir}/client/snd_mem.cpp"
-		"${MPDir}/client/snd_mix.cpp"
-		"${MPDir}/client/snd_mp3.cpp"
-		"${MPDir}/client/snd_mp3.h"
-		"${MPDir}/client/snd_music.cpp"
-		"${MPDir}/client/snd_music.h"
+#		"${MPDir}/client/cl_uiapi.cpp"
+#		"${MPDir}/client/cl_uiapi.h"
+#		"${MPDir}/client/FXExport.cpp"
+#		"${MPDir}/client/FXExport.h"
+#		"${MPDir}/client/FxPrimitives.cpp"
+#		"${MPDir}/client/FxPrimitives.h"
+#		"${MPDir}/client/FxScheduler.cpp"
+#		"${MPDir}/client/FxScheduler.h"
+#		"${MPDir}/client/FxSystem.cpp"
+#		"${MPDir}/client/FxSystem.h"
+#		"${MPDir}/client/FxTemplate.cpp"
+#		"${MPDir}/client/FxUtil.cpp"
+#		"${MPDir}/client/FxUtil.h"
+#		"${MPDir}/client/snd_ambient.cpp"
+#		"${MPDir}/client/snd_ambient.h"
+#		"${MPDir}/client/snd_dma.cpp"
+#		"${MPDir}/client/snd_local.h"
+#		"${MPDir}/client/snd_mem.cpp"
+#		"${MPDir}/client/snd_mix.cpp"
+#		"${MPDir}/client/snd_mp3.cpp"
+#		"${MPDir}/client/snd_mp3.h"
+#		"${MPDir}/client/snd_music.cpp"
+#		"${MPDir}/client/snd_music.h"
 		)
 	source_group("client" FILES ${MPEngineClientFiles})
 	set(MPEngineFiles ${MPEngineFiles} ${MPEngineClientFiles})
 	
 	set(MPEngineCommonFiles
-		"${MPDir}/qcommon/cm_terrainmap.cpp"
-		"${MPDir}/qcommon/CNetProfile.cpp"
+#		"${MPDir}/qcommon/cm_terrainmap.cpp"
+#		"${MPDir}/qcommon/CNetProfile.cpp"
 		"${MPDir}/qcommon/exe_headers.cpp"
 		"${MPDir}/qcommon/exe_headers.h"
 		"${MPDir}/qcommon/files.h"
-		"${MPDir}/qcommon/hstring.cpp"
-		"${MPDir}/qcommon/hstring.h"
-		"${MPDir}/qcommon/INetProfile.h"
+#		"${MPDir}/qcommon/hstring.cpp"
+#		"${MPDir}/qcommon/hstring.h"
+#		"${MPDir}/qcommon/INetProfile.h"
 		)
 	source_group("common" FILES ${MPEngineCommonFiles})
 	set(MPEngineFiles ${MPEngineFiles} ${MPEngineCommonFiles})
@@ -506,7 +574,7 @@ if(BuildMPEngine)
 		"${MPDir}/mp3code/wavep.c"
 		)
 	source_group("mp3code" FILES ${MPEngineMp3Files})
-	set(MPEngineFiles ${MPEngineFiles} ${MPEngineMp3Files})
+#	set(MPEngineFiles ${MPEngineFiles} ${MPEngineMp3Files})
 	
 	if(WIN32)
 		set(MPEngineWin32Files
@@ -515,7 +583,7 @@ if(BuildMPEngine)
 			"${MPDir}/win32/resource.h"
 			"${MPDir}/win32/win_input.cpp"
 			"${MPDir}/win32/win_main.cpp"
-			"${MPDir}/win32/win_snd.cpp"
+	#		"${MPDir}/win32/win_snd.cpp"
 			"${MPDir}/win32/win_syscon.cpp"
 			"${MPDir}/win32/win_wndproc.cpp"
 			"${MPDir}/win32/openjk.rc"
@@ -538,6 +606,15 @@ if(BuildMPEngine)
 		set(MPEngineFiles ${MPEngineFiles} ${MPEngineSysFiles})
 	endif(WIN32)
 
+	if(WIN32)
+		set(ConClientFiles
+			"${MPDir}/conclient/con_win32.cpp"
+			"${MPDir}/conclient/con_local.h"
+			)
+		source_group("conclient" FILES ${ConClientFiles})
+		set(MPEngineFiles ${MPEngineFiles} ${ConClientFiles})
+	endif(WIN32)
+
 	# todo: windows resources
 
 	if(MakeApplicationBundles)
@@ -547,7 +624,7 @@ if(BuildMPEngine)
 	endif(MakeApplicationBundles)
 
 	if(WIN32)
-		add_executable(${MPEngine} WIN32 ${MPEngineFiles})
+		add_executable(${MPEngine}  ${MPEngineFiles})
 	else(WIN32)
 		if(MakeApplicationBundles)
 			add_executable(${MPEngine} MACOSX_BUNDLE ${MPEngineFiles})

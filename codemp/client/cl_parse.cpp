@@ -949,7 +949,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			break;
 		case svc_mapchange:
 			if ( cls.cgameStarted )
-				CGVM_MapChange();
+//				CGVM_MapChange();
 			break;
 		}
 	}

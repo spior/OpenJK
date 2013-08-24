@@ -1,3 +1,4 @@
+#pragma once
 
 #define PLUGIN_VER					"1.0.0"
 #define VERSION						"^7P^0roxy^5M^0od ^3Client Plugin ^7v^5"PLUGIN_VER

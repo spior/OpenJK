@@ -10,6 +10,7 @@
 #include "game/bg_public.h"
 #include "cgame/cg_public.h"
 #include "ui/ui_public.h"
+#include "conclient/con_local.h"
 
 #define	RETRANSMIT_TIMEOUT	3000	// time between connection packet retransmits
 

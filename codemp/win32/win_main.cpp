@@ -87,7 +87,8 @@ void QDECL Sys_Error( const char *error, ... ) {
       	DispatchMessage (&msg);
 	}
 
-	Sys_DestroyConsole();
+//	Sys_DestroyConsole();
+	CON_Shutdown();
 	Com_ShutdownZoneMemory();
  	Com_ShutdownHunkMemory();
 
@@ -102,7 +103,8 @@ Sys_Quit
 void Sys_Quit( void ) {
 	timeEndPeriod( 1 );
 	IN_Shutdown();
-	Sys_DestroyConsole();
+//	Sys_DestroyConsole();
+	CON_Shutdown();
 	Com_ShutdownZoneMemory();
  	Com_ShutdownHunkMemory();
 
@@ -997,7 +999,7 @@ sysEvent_t Sys_GetEvent( void ) {
 	}
 
 	// check for console commands
-	s = Sys_ConsoleInput();
+	s = CON_Input();//Sys_ConsoleInput();
 	if ( s ) {
 		char	*b;
 		int		len;
@@ -1260,6 +1262,7 @@ int main( int argc, char **argv )
 	char	commandLine[ MAX_STRING_CHARS ] = { 0 };
 
 //	Sys_CreateConsole();
+	CON_Init();
 
 	// no abort/retry/fail errors
 	SetErrorMode( SEM_FAILCRITICALERRORS );
